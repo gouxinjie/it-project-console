@@ -176,3 +176,7 @@ pro-manage-2/
 - **系统管理**:
   - 用户登录/注册
   - 权限认证
+
+## License
+
+MIT License. See [LICENSE](LICENSE) file for more information.
