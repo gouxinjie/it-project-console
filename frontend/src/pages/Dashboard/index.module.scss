@@ -1,0 +1,69 @@
+.dashboardHeader {
+    margin-bottom: 24px;
+}
+
+.statisticCard {
+    transition: all 0.3s;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    :global(.ant-statistic-title) {
+        font-size: 14px;
+        color: #8c8c8c;
+        margin-bottom: 8px;
+    }
+
+    :global(.ant-statistic-content) {
+        font-family: 'Dosis', sans-serif;
+        font-weight: 600;
+    }
+}
+
+.cardIcon {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    font-size: 64px;
+    opacity: 0.1;
+    transform: rotate(-15deg);
+}
+
+.chartCard {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+
+    :global(.ant-card-head) {
+        border-bottom: none;
+        padding: 20px 24px 0;
+    }
+
+    :global(.ant-card-head-title) {
+        font-size: 16px;
+        font-weight: 600;
+    }
+}
+
+.recentTable {
+    :global {
+        .ant-table-thead>tr>th {
+            background: #fafafa;
+            font-weight: 600;
+        }
+    }
+}
+
+.statusIndicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}

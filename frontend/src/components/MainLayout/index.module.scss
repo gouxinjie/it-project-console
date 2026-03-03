@@ -1,0 +1,91 @@
+.layoutContainer {
+    height: 100vh;
+    overflow: hidden;
+}
+
+.header {
+    padding: 0 20px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #f0f0f0;
+    z-index: 1000;
+    height: 64px;
+    line-height: 64px;
+}
+
+.logoArea {
+    display: flex;
+    align-items: center;
+    padding-left: 24px;
+    transition: width 0.2s;
+    border-right: 1px solid #f0f0f0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.logoIcon {
+    width: 32px;
+    height: 32px;
+    background: #1677ff;
+    border-radius: 8px;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.logoText {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1d2129;
+    white-space: nowrap;
+}
+
+.headerRight {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.userInfo {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    .userName {
+        font-size: 14px;
+        color: #4e5969;
+    }
+}
+
+.sider {
+    border-right: 1px solid #f0f0f0;
+    height: calc(100vh - 64px);
+}
+
+.contentWrapper {
+    display: flex;
+    flex-direction: column;
+    background: #f0f2f5;
+    height: calc(100vh - 64px);
+    overflow: hidden;
+}
+
+.breadcrumbArea {
+    flex-shrink: 0;
+    padding: 16px 15px;
+    background: #f0f2f5;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.mainContent {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
