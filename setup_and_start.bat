@@ -59,7 +59,7 @@ echo [OK] 后端依赖安装完成
 
 echo.
 echo ------------------------------------------
-echo   步骤 2/4: 初始化数据库与数据
+echo   步骤 2/4: 初始化数据库
 echo ------------------------------------------
 echo 正在初始化数据库表结构...
 python init_db.py
@@ -69,12 +69,25 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo 正在填充演示数据...
-python seed_data.py
-if %errorlevel% neq 0 (
-    echo [警告] 数据填充脚本执行异常，可能是数据已存在或脚本错误，将继续启动服务。
+set "SEED_DEMO_DATA="
+if /I "%PROMAN_SEED_DEMO_DATA%"=="1" set "SEED_DEMO_DATA=1"
+
+if not defined SEED_DEMO_DATA (
+    set /p SEED_DEMO_DATA_INPUT=是否加载演示数据? 该操作会清空现有项目/成员数据 [y/N]:
+    if /I "!SEED_DEMO_DATA_INPUT!"=="Y" set "SEED_DEMO_DATA=1"
+    if /I "!SEED_DEMO_DATA_INPUT!"=="YES" set "SEED_DEMO_DATA=1"
+)
+
+if defined SEED_DEMO_DATA (
+    echo 正在填充演示数据...
+    python seed_data.py
+    if %errorlevel% neq 0 (
+        echo [警告] 数据填充脚本执行异常，请检查日志后重试。
+    ) else (
+        echo [OK] 演示数据填充完成
+    )
 ) else (
-    echo [OK] 数据库初始化完成
+    echo [OK] 已跳过演示数据填充，仅保留默认管理员账号。
 )
 
 echo.

@@ -52,7 +52,9 @@ MANIFEST
 .venv
 venv/
 ENV/
-# .env
+.env
+backend/.env
+frontend/.env
 .pytest_cache/
 .coverage
 htmlcov/
@@ -60,8 +62,6 @@ htmlcov/
 *.sqlite3
 
 # Project specific
-# backend/.env
-# frontend/.env
 frontend/dist/
 backend/__pycache__/
 backend/app/__pycache__/

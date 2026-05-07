@@ -21,31 +21,37 @@ def login_access_token(
     # 查找用户
     user = db.query(UserModel).filter(UserModel.username == form_data.username).first()
 
-    
     # 验证用户是否存在及密码是否正确
     if not user or not security.verify_password(form_data.password, user.hashed_password):
-        # 保留硬编码的管理员账号作为后门 (可选)
-        if form_data.username == "admin" and form_data.password == "admin123!@#":
+        if (
+            settings.ENABLE_DEBUG_ADMIN_LOGIN
+            and form_data.username == settings.DEFAULT_ADMIN_USERNAME
+            and form_data.password == settings.DEFAULT_ADMIN_PASSWORD
+        ):
             access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            if user and user.is_active:
+                user.last_login = datetime.utcnow()
+                db.commit()
             return {
                 "access_token": security.create_access_token(
-                    form_data.username, expires_delta=access_token_expires
+                    user.id if user else form_data.username,
+                    expires_delta=access_token_expires,
                 ),
                 "token_type": "bearer",
             }
-            
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="用户名或密码错误",
         )
-    
+
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
-        
+
     # 更新最后登录时间
     user.last_login = datetime.utcnow()
     db.commit()
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return {
         "access_token": security.create_access_token(
@@ -87,3 +93,10 @@ def register_user(
     db.commit()
     db.refresh(user)
     return user
+
+
+@router.get("/login/me", response_model=UserSchema)
+def read_current_user(
+    current_user: UserModel = Depends(deps.get_current_active_user),
+):
+    return current_user

@@ -1,56 +1,188 @@
+import type {
+  ProjectExternalResource,
+  ProjectExternalResourceUpdatePayload,
+  ProjectPage,
+  ProjectPayload,
+  ProjectQueryParams,
+  ProjectResource,
+  ProjectResourcePayload,
+  ProjectResourceUpdatePayload,
+  ProjectResourcesPayload,
+  ProjectSummary,
+  ProjectUpdatePayload,
+} from "@/types/project";
+import {
+  createCacheKey,
+  fetchWithCache,
+  invalidateCacheByPrefix,
+  prefetchWithCache,
+} from "@/utils/cache";
 import request from "@/utils/request";
 
-// 项目相关 API
-export async function getProjects(params?: any) {
-  return request.get("/projects/", { params });
+const PROJECT_LIST_CACHE_PREFIX = "projects:list";
+const PROJECT_DETAIL_CACHE_PREFIX = "projects:detail";
+const PROJECT_RESOURCES_CACHE_PREFIX = "projects:resources";
+const PROJECT_LIST_CACHE_TTL_MS = 45_000;
+const PROJECT_DETAIL_CACHE_TTL_MS = 30_000;
+const PROJECT_RESOURCES_CACHE_TTL_MS = 30_000;
+
+function requestProjects(params?: ProjectQueryParams): Promise<ProjectPage> {
+  return request.get<ProjectPage>("/projects/", { params });
 }
 
-export async function getProject(projectId: number) {
-  return request.get(`/projects/${projectId}`);
+function requestProject(projectId: number): Promise<ProjectSummary> {
+  return request.get<ProjectSummary>(`/projects/${projectId}`);
 }
 
-export async function createProject(data: any) {
-  return request.post("/projects/", data);
+function requestProjectResources(projectId: number): Promise<ProjectResourcesPayload> {
+  return request.get<ProjectResourcesPayload>(`/projects/${projectId}/resources`);
 }
 
-export async function updateProject(projectId: number, data: any) {
-  return request.put(`/projects/${projectId}`, data);
+function invalidateProjectCaches(projectId?: number): void {
+  invalidateCacheByPrefix(PROJECT_LIST_CACHE_PREFIX);
+  if (projectId !== undefined) {
+    invalidateCacheByPrefix(
+      createCacheKey(PROJECT_DETAIL_CACHE_PREFIX, { projectId }),
+    );
+    invalidateCacheByPrefix(
+      createCacheKey(PROJECT_RESOURCES_CACHE_PREFIX, { projectId }),
+    );
+  } else {
+    invalidateCacheByPrefix(PROJECT_DETAIL_CACHE_PREFIX);
+    invalidateCacheByPrefix(PROJECT_RESOURCES_CACHE_PREFIX);
+  }
 }
 
-export async function deleteProject(projectId: number) {
-  return request.delete(`/projects/${projectId}`);
+export async function getProjects(params?: ProjectQueryParams): Promise<ProjectPage> {
+  const cacheKey = createCacheKey(PROJECT_LIST_CACHE_PREFIX, params);
+  return fetchWithCache(
+    cacheKey,
+    () => requestProjects(params),
+    PROJECT_LIST_CACHE_TTL_MS,
+  );
 }
 
-// 项目资源相关 API
-export async function getProjectResources(projectId: number) {
-  return request.get(`/projects/${projectId}/resources`);
+export function prefetchProjects(params?: ProjectQueryParams): void {
+  const cacheKey = createCacheKey(PROJECT_LIST_CACHE_PREFIX, params);
+  prefetchWithCache(
+    cacheKey,
+    () => requestProjects(params),
+    PROJECT_LIST_CACHE_TTL_MS,
+  );
 }
 
-export async function getProjectResource(projectId: number, resourceId: number) {
-  return request.get(`/projects/${projectId}/resources/${resourceId}`);
+export async function getProject(projectId: number): Promise<ProjectSummary> {
+  const cacheKey = createCacheKey(PROJECT_DETAIL_CACHE_PREFIX, { projectId });
+  return fetchWithCache(
+    cacheKey,
+    () => requestProject(projectId),
+    PROJECT_DETAIL_CACHE_TTL_MS,
+  );
 }
 
-export async function createProjectResource(projectId: number, data: any) {
-  return request.post(`/projects/${projectId}/resources`, data);
+export async function createProject(data: ProjectPayload): Promise<ProjectSummary> {
+  const response = await request.post<ProjectSummary, ProjectPayload>("/projects/", data);
+  invalidateProjectCaches();
+  return response;
 }
 
-export async function updateProjectResource(projectId: number, resourceId: number, data: any) {
-  return request.put(`/projects/${projectId}/resources/${resourceId}`, data);
+export async function updateProject(
+  projectId: number,
+  data: ProjectUpdatePayload,
+): Promise<ProjectSummary> {
+  const response = await request.put<ProjectSummary, ProjectUpdatePayload>(
+    `/projects/${projectId}`,
+    data,
+  );
+  invalidateProjectCaches(projectId);
+  return response;
 }
 
-export async function deleteProjectResource(resourceId: number) {
-  return request.delete(`/projects/resources/${resourceId}`);
+export async function deleteProject(projectId: number): Promise<{ message: string }> {
+  const response = await request.delete<{ message: string }>(`/projects/${projectId}`);
+  invalidateProjectCaches(projectId);
+  return response;
 }
 
-// 外部资源相关 API
-export async function getProjectExternalResources(projectId: number) {
-  return request.get(`/projects/${projectId}/external-resources`);
+export async function getProjectResources(
+  projectId: number,
+): Promise<ProjectResourcesPayload> {
+  const cacheKey = createCacheKey(PROJECT_RESOURCES_CACHE_PREFIX, { projectId });
+  return fetchWithCache(
+    cacheKey,
+    () => requestProjectResources(projectId),
+    PROJECT_RESOURCES_CACHE_TTL_MS,
+  );
 }
 
-export async function updateProjectExternalResources(projectId: number, data: any) {
-  return request.put(`/projects/${projectId}/external-resources`, data);
+export async function getProjectResource(
+  projectId: number,
+  resourceId: number,
+): Promise<ProjectResource> {
+  return request.get<ProjectResource>(`/projects/${projectId}/resources/${resourceId}`);
 }
 
-export async function deleteProjectExternalResources(projectId: number) {
-  return request.delete(`/projects/${projectId}/external-resources`);
+export async function createProjectResource(
+  projectId: number,
+  data: ProjectResourcePayload,
+): Promise<ProjectResource> {
+  const response = await request.post<ProjectResource, ProjectResourcePayload>(
+    `/projects/${projectId}/resources`,
+    data,
+  );
+  invalidateProjectCaches(projectId);
+  return response;
+}
+
+export async function updateProjectResource(
+  projectId: number,
+  resourceId: number,
+  data: ProjectResourceUpdatePayload,
+): Promise<ProjectResource> {
+  const response = await request.put<ProjectResource, ProjectResourceUpdatePayload>(
+    `/projects/${projectId}/resources/${resourceId}`,
+    data,
+  );
+  invalidateProjectCaches(projectId);
+  return response;
+}
+
+export async function deleteProjectResource(
+  resourceId: number,
+): Promise<{ message: string }> {
+  const response = await request.delete<{ message: string }>(
+    `/projects/resources/${resourceId}`,
+  );
+  invalidateProjectCaches();
+  return response;
+}
+
+export async function getProjectExternalResources(
+  projectId: number,
+): Promise<ProjectExternalResource> {
+  return request.get<ProjectExternalResource>(
+    `/projects/${projectId}/external-resources`,
+  );
+}
+
+export async function updateProjectExternalResources(
+  projectId: number,
+  data: ProjectExternalResourceUpdatePayload,
+): Promise<ProjectExternalResource> {
+  const response = await request.put<
+    ProjectExternalResource,
+    ProjectExternalResourceUpdatePayload
+  >(`/projects/${projectId}/external-resources`, data);
+  invalidateProjectCaches(projectId);
+  return response;
+}
+
+export async function deleteProjectExternalResources(
+  projectId: number,
+): Promise<{ message: string }> {
+  const response = await request.delete<{ message: string }>(
+    `/projects/${projectId}/external-resources`,
+  );
+  invalidateProjectCaches(projectId);
+  return response;
 }

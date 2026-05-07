@@ -1,8 +1,9 @@
-from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel
+from typing import Optional
 
-# 共享属性
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class MemberBase(BaseModel):
     member_name: str
     position: str
@@ -10,11 +11,11 @@ class MemberBase(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
 
-# 用于创建的属性
+
 class MemberCreate(MemberBase):
     pass
 
-# 用于更新的属性
+
 class MemberUpdate(BaseModel):
     member_name: Optional[str] = None
     position: Optional[str] = None
@@ -22,11 +23,25 @@ class MemberUpdate(BaseModel):
     phone: Optional[str] = None
     email: Optional[str] = None
 
-# 数据库响应模型
+
+class MemberBrief(BaseModel):
+    member_id: int
+    member_name: str
+    position: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class Member(MemberBase):
     member_id: int
     create_time: datetime
     update_time: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MemberPage(BaseModel):
+    items: list[Member] = Field(default_factory=list)
+    total: int
+    skip: int = 0
+    limit: int

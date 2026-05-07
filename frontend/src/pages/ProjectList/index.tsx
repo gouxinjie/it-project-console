@@ -1,598 +1,913 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Tag, Space, Button, Input, Select, DatePicker, Card, message, Modal, Row, Col, Descriptions, Typography, Spin } from 'antd';
-import { PlusOutlined, SearchOutlined, ExclamationCircleOutlined, GithubOutlined, GlobalOutlined, PartitionOutlined, CloudOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import { getProjects, getProjectResources, deleteProject, deleteProjectResource, deleteProjectExternalResources } from '@/services/project';
-import { getMembers } from '@/services/member';
-import dayjs from 'dayjs';
+import React, { useEffect, useState } from "react";
+import {
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Descriptions,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+  message,
+  type TableColumnsType,
+} from "antd";
+import {
+  CloudOutlined,
+  ExclamationCircleOutlined,
+  GithubOutlined,
+  GlobalOutlined,
+  PartitionOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+import dayjs, { type Dayjs } from "dayjs";
 
-const { Option } = Select;
+import {
+  BUSINESS_TYPE_OPTIONS,
+  BUSINESS_UNIT_OPTIONS,
+  PROJECT_STATUS_COLORS,
+  PROJECT_STATUS_OPTIONS,
+  PROJECT_TYPE_OPTIONS,
+} from "@/constants/project";
+import { getMembers } from "@/services/member";
+import {
+  deleteProject,
+  deleteProjectExternalResources,
+  deleteProjectResource,
+  getProjectResources,
+  getProjects,
+} from "@/services/project";
+import type { Member } from "@/types/member";
+import type {
+  ProjectExternalResource,
+  ProjectQueryParams,
+  ProjectResource,
+  ProjectSummary,
+} from "@/types/project";
+
 const { RangePicker } = DatePicker;
 const { confirm } = Modal;
 const { Text } = Typography;
 
+interface ProjectFilters {
+  project_type?: string;
+  project_status?: string;
+  business_unit?: string;
+  business_type?: string;
+  belong_system?: string;
+  project_leader_id?: number;
+  timeRange: [Dayjs, Dayjs] | null;
+}
+
+interface TablePaginationState {
+  current: number;
+  pageSize: number;
+  total: number;
+}
+
+interface ProjectTableRecord extends ProjectSummary {
+  key: number;
+  resources: ProjectResource[];
+  external_resources: ProjectExternalResource | null;
+  hasLoadedResources: boolean;
+  resourceLoading: boolean;
+}
+
+const defaultFilters: ProjectFilters = {
+  timeRange: null,
+};
+
+const formatMemberNames = (
+  members: Array<{ member_name: string }> | undefined,
+): string => {
+  if (!members || members.length === 0) {
+    return "-";
+  }
+  return members.map((member) => member.member_name).join("、");
+};
+
 const ProjectList: React.FC = () => {
-    const navigate = useNavigate();
-    const [expandedRowKeys, setExpandedRowKeys] = useState<readonly React.Key[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [dataSource, setDataSource] = useState<any[]>([]);
-    const [members, setMembers] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [dataSource, setDataSource] = useState<ProjectTableRecord[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [filters, setFilters] = useState<ProjectFilters>(defaultFilters);
+  const [pagination, setPagination] = useState<TablePaginationState>({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
 
-    // 筛选条件状态
-    const [queryParams, setQueryParams] = useState<any>({
-        project_type: undefined,
-        project_status: undefined,
-        business_unit: '',
-        business_type: undefined,
-        belong_system: '',
-        project_leader: '',
-        timeRange: null
+  useEffect(() => {
+    void fetchProjects(defaultFilters, { current: 1, pageSize: 10, total: 0 });
+    void fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    try {
+      const response = await getMembers({ skip: 0, limit: 1000 });
+      setMembers(response.items);
+    } catch (error) {
+      console.error("Failed to fetch members:", error);
+    }
+  };
+
+  const fetchProjects = async (
+    nextFilters: ProjectFilters = filters,
+    nextPagination: TablePaginationState = pagination,
+  ) => {
+    setLoading(true);
+    try {
+      const params: ProjectQueryParams = {
+        skip: (nextPagination.current - 1) * nextPagination.pageSize,
+        limit: nextPagination.pageSize,
+      };
+
+      if (nextFilters.project_type) {
+        params.project_type = nextFilters.project_type;
+      }
+      if (nextFilters.project_status) {
+        params.project_status = nextFilters.project_status;
+      }
+      if (nextFilters.business_unit) {
+        params.business_unit = nextFilters.business_unit;
+      }
+      if (nextFilters.business_type) {
+        params.business_type = nextFilters.business_type;
+      }
+      if (nextFilters.belong_system) {
+        params.belong_system = nextFilters.belong_system;
+      }
+      if (nextFilters.project_leader_id !== undefined) {
+        params.project_leader_id = nextFilters.project_leader_id;
+      }
+      if (nextFilters.timeRange) {
+        params.start_time = nextFilters.timeRange[0].startOf("day").toISOString();
+        params.end_time = nextFilters.timeRange[1].endOf("day").toISOString();
+      }
+
+      const response = await getProjects(params);
+      setDataSource(
+        response.items.map((item) => ({
+          ...item,
+          key: item.project_id,
+          resources: [],
+          external_resources: null,
+          hasLoadedResources: false,
+          resourceLoading: false,
+        })),
+      );
+      setFilters(nextFilters);
+      setExpandedRowKeys([]);
+      setPagination({
+        current: nextPagination.current,
+        pageSize: nextPagination.pageSize,
+        total: response.total,
+      });
+    } catch (error) {
+      message.error("获取项目列表失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshProjectResources = async (projectId: number) => {
+    const response = await getProjectResources(projectId);
+    setDataSource((previous) =>
+      previous.map((item) =>
+        item.project_id === projectId
+          ? {
+              ...item,
+              resources: response.resources,
+              external_resources: response.external_resources,
+              has_external_resources: Boolean(response.external_resources),
+              hasLoadedResources: true,
+              resourceLoading: false,
+            }
+          : item,
+      ),
+    );
+  };
+
+  const handleSearch = () => {
+    void fetchProjects(filters, { ...pagination, current: 1 });
+  };
+
+  const handleReset = () => {
+    void fetchProjects(defaultFilters, { ...pagination, current: 1 });
+  };
+
+  const handleExpand = async (expanded: boolean, record: ProjectTableRecord) => {
+    if (!expanded || record.hasLoadedResources) {
+      return;
+    }
+
+    setDataSource((previous) =>
+      previous.map((item) =>
+        item.project_id === record.project_id
+          ? { ...item, resourceLoading: true }
+          : item,
+      ),
+    );
+
+    try {
+      await refreshProjectResources(record.project_id);
+    } catch (error) {
+      message.error("加载项目资源失败");
+      setDataSource((previous) =>
+        previous.map((item) =>
+          item.project_id === record.project_id
+            ? { ...item, resourceLoading: false }
+            : item,
+        ),
+      );
+    }
+  };
+
+  const handleDeleteProject = async (record: ProjectTableRecord) => {
+    try {
+      const resourceSummary = await getProjectResources(record.project_id);
+      const hasResources =
+        resourceSummary.resources.length > 0 ||
+        Boolean(resourceSummary.external_resources);
+
+      if (hasResources) {
+        Modal.warning({
+          title: "无法删除项目",
+          content: "当前项目下仍有资源，请先清理所有资源后再删除项目。",
+          okText: "知道了",
+        });
+        return;
+      }
+    } catch (error) {
+      message.error("校验项目资源失败，请稍后重试");
+      return;
+    }
+
+    confirm({
+      title: "确认删除项目",
+      icon: <ExclamationCircleOutlined />,
+      content: `确定要删除项目「${record.project_name}」吗？此操作不可恢复。`,
+      okText: "确认删除",
+      okType: "danger",
+      cancelText: "取消",
+      onOk: async () => {
+        try {
+          await deleteProject(record.project_id);
+          message.success("项目已删除");
+          void fetchProjects(filters, pagination);
+        } catch (error) {
+          message.error("删除项目失败");
+        }
+      },
     });
+  };
 
-    const fetchProjects = async () => {
-        setLoading(true);
+  const handleDeleteResource = (
+    projectId: number,
+    resourceId: number,
+    resourceName: string,
+  ) => {
+    confirm({
+      title: "确认删除资源",
+      icon: <ExclamationCircleOutlined />,
+      content: `确定要删除资源「${resourceName}」吗？此操作不可恢复。`,
+      okText: "确认删除",
+      okType: "danger",
+      cancelText: "取消",
+      onOk: async () => {
         try {
-            const params: any = { ...queryParams };
-            
-            // 处理时间范围
-            if (params.timeRange) {
-                params.start_time = params.timeRange[0].startOf('day').toISOString();
-                params.end_time = params.timeRange[1].endOf('day').toISOString();
-                delete params.timeRange;
-            }
-
-            // 移除空值
-            Object.keys(params).forEach(key => {
-                if (params[key] === '' || params[key] === undefined || params[key] === null) {
-                    delete params[key];
-                }
-            });
-
-            const data: any = await getProjects(params);
-            setDataSource(data.map((item: any) => ({
-                ...item,
-                key: item.project_id,
-                update_time: dayjs(item.update_time).format('YYYY-MM-DD HH:mm'),
-                resources: [],
-                external_resources: [],
-                hasLoadedResources: false,
-                resourceLoading: false
-            })));
+          await deleteProjectResource(resourceId);
+          await refreshProjectResources(projectId);
+          message.success("资源已删除");
+          void fetchProjects(filters, pagination);
         } catch (error) {
-            message.error('获取项目列表失败');
-        } finally {
-            setLoading(false);
+          message.error("删除资源失败");
         }
-    };
+      },
+    });
+  };
 
-    // 重置筛选
-    const handleReset = () => {
-        setQueryParams({
-            project_type: undefined,
-            project_status: undefined,
-            business_unit: '',
-            business_type: undefined,
-            belong_system: '',
-            project_leader: '',
-            timeRange: null
-        });
-        fetchProjects();
-    };
-
-    const handleExpand = async (expanded: boolean, record: any) => {
-        if (expanded && !record.hasLoadedResources) {
-            // 更新当前行的 loading 状态
-            setDataSource(prev => prev.map(item =>
-                item.project_id === record.project_id ? { ...item, resourceLoading: true } : item
-            ));
-
-            try {
-                const res: any = await getProjectResources(record.project_id);
-                setDataSource(prev => prev.map(item =>
-                    item.project_id === record.project_id
-                        ? {
-                            ...item,
-                            resources: res.resources,
-                            external_resources: res.external_resources,
-                            hasLoadedResources: true,
-                            resourceLoading: false
-                        }
-                        : item
-                ));
-            } catch (error) {
-                message.error('加载项目资源失败');
-                setDataSource(prev => prev.map(item =>
-                    item.project_id === record.project_id ? { ...item, resourceLoading: false } : item
-                ));
-            }
-        }
-    };
-
-    // 删除项目
-    const handleDeleteProject = (record: any) => {
-        // 检查是否有子资源
-        const hasResources = record.resources?.length > 0 || record.external_resources?.length > 0;
-
-        if (hasResources) {
-            Modal.warning({
-                title: '无法删除',
-                content: '该项目下存在子资源，请先删除所有子资源后再删除项目。',
-                okText: '知道了'
-            });
-            return;
-        }
-
-        confirm({
-            title: '确认删除',
-            icon: <ExclamationCircleOutlined />,
-            content: `确定要删除项目"${record.project_name}"吗？此操作不可恢复。`,
-            okText: '确认删除',
-            okType: 'danger',
-            cancelText: '取消',
-            onOk: async () => {
-                try {
-                    await deleteProject(record.project_id);
-                    message.success('删除成功');
-                    fetchProjects();
-                } catch (error) {
-                    message.error('删除失败');
-                }
-            }
-        });
-    };
-
-    // 删除子资源
-    const handleDeleteResource = (projectId: number, resourceId: number, resourceName: string) => {
-        confirm({
-            title: '确认删除',
-            icon: <ExclamationCircleOutlined />,
-            content: `确定要删除资源"${resourceName}"吗？此操作不可恢复。`,
-            okText: '确认删除',
-            okType: 'danger',
-            cancelText: '取消',
-            onOk: async () => {
-                try {
-                    await deleteProjectResource(resourceId);
-                    message.success('删除成功');
-                    // 重新加载该项目的资源
-                    const res: any = await getProjectResources(projectId);
-                    setDataSource(prev => prev.map(item =>
-                        item.project_id === projectId
-                            ? {
-                                ...item,
-                                resources: res.resources,
-                                external_resources: res.external_resources
-                            }
-                            : item
-                    ));
-                } catch (error) {
-                    message.error('删除失败');
-                }
-            }
-        });
-    };
-
-    // 删除外部资源（整块删除）
-    const handleDeleteExternalResources = (projectId: number) => {
-        confirm({
-            title: '确认删除',
-            icon: <ExclamationCircleOutlined />,
-            content: `确定要删除该项目的所有外部资源配置吗？此操作不可恢复。`,
-            okText: '确认删除',
-            okType: 'danger',
-            cancelText: '取消',
-            onOk: async () => {
-                try {
-                    await deleteProjectExternalResources(projectId);
-                    message.success('删除成功');
-                    // 重新加载该项目的资源
-                    const res: any = await getProjectResources(projectId);
-                    setDataSource(prev => prev.map(item =>
-                        item.project_id === projectId
-                            ? {
-                                ...item,
-                                resources: res.resources,
-                                external_resources: res.external_resources,
-                                has_external_resources: false
-                            }
-                            : item
-                    ));
-                    // 刷新列表以更新主表格的“外部资源”按钮状态
-                    fetchProjects();
-                } catch (error) {
-                    message.error('删除失败');
-                }
-            }
-        });
-    };
-
-    useEffect(() => {
-        fetchProjects();
-        fetchMembers();
-    }, []);
-
-    const fetchMembers = async () => {
+  const handleDeleteExternalResources = (projectId: number) => {
+    confirm({
+      title: "确认删除外部资源",
+      icon: <ExclamationCircleOutlined />,
+      content: "确定要删除当前项目的整组外部资源配置吗？此操作不可恢复。",
+      okText: "确认删除",
+      okType: "danger",
+      cancelText: "取消",
+      onOk: async () => {
         try {
-            const res: any = await getMembers();
-            setMembers(res);
+          await deleteProjectExternalResources(projectId);
+          await refreshProjectResources(projectId);
+          message.success("外部资源已删除");
+          void fetchProjects(filters, pagination);
         } catch (error) {
-            console.error('获取成员列表失败', error);
+          message.error("删除外部资源失败");
         }
-    };
+      },
+    });
+  };
 
-    // 父表格列定义
-    const columns = [
-        {
-            title: '项目名称',
-            dataIndex: 'project_name',
-            key: 'project_name',
-            width: 200,
-            ellipsis: true,
-            fixed: 'left' as const
-        },
-        { title: '项目类型', dataIndex: 'project_type', key: 'project_type', width: 120 },
-        {
-            title: '项目状态',
-            dataIndex: 'project_status',
-            key: 'project_status',
-            width: 120,
-            render: (status: string) => {
-                let color = 'blue';
-                if (status === '已上线') color = 'green';
-                if (status === '开发中') color = 'orange';
-                if (status === '已下线') color = 'gray';
-                return <Tag color={color}>{status}</Tag>;
-            }
-        },
-        {
-            title: '项目描述',
-            dataIndex: 'project_desc',
-            key: 'project_desc',
-            width: 200,
-            ellipsis: true
-        },
-        {
-            title: '技术框架',
-            dataIndex: 'tech_framework',
-            key: 'tech_framework',
-            width: 200,
-            ellipsis: true
-        },
-        { title: '业务方', dataIndex: 'business_unit', key: 'business_unit', width: 150, ellipsis: true },
-        { title: '业务类型', dataIndex: 'business_type', key: 'business_type', width: 120 },
-        { title: '所属系统', dataIndex: 'belong_system', key: 'belong_system', width: 120 },
-        { title: '项目负责人', dataIndex: 'project_leader', key: 'project_leader', width: 120 },
-        { title: '更新时间', dataIndex: 'update_time', key: 'update_time', width: 180 },
-        { title: '备注', dataIndex: 'remarks', key: 'remarks', width: 120, ellipsis: true },
-        {
-            title: '操作',
-            key: 'action',
-            width: 300,
-            fixed: 'right' as const,
-            render: (_: any, record: any) => {
-                // 检查子项目状态
-                const resources = record.resources || [];
-                const hasFrontend = resources.some((r: any) => r.resource_type === '前端');
-                const hasBackend = resources.some((r: any) => r.resource_type === '后端');
-                const isFull = hasFrontend && hasBackend;
-                const hasExternal = record.has_external_resources;
-
-                return (
-                    <Space size="small">
-                        <Button
-                            type="link"
-                            size="small"
-                            icon={<PlusOutlined />}
-                            disabled={isFull}
-                            onClick={() => {
-                                let targetType = '';
-                                if (hasFrontend && !hasBackend) targetType = '后端';
-                                else if (!hasFrontend && hasBackend) targetType = '前端';
-                                
-                                navigate(`/projects/${record.project_id}/resource/create${targetType ? `?type=${targetType}` : ''}`);
-                            }}
-                        >
-                            添加子项目
-                        </Button>
-                        <Button
-                            type="link"
-                            size="small"
-                            disabled={hasExternal}
-                            onClick={() => navigate(`/projects/${record.project_id}/external-resource/edit`)}
-                        >
-                            添加外部资源
-                        </Button>
-                        <Button
-                            type="link"
-                            size="small"
-                            onClick={() => navigate(`/projects/${record.project_id}/edit`)}
-                        >
-                            编辑
-                        </Button>
-                        <Button
-                            type="link"
-                            size="small"
-                            danger
-                            onClick={() => handleDeleteProject(record)}
-                        >
-                            删除
-                        </Button>
-                    </Space>
-                );
-            },
-        },
-    ];
-
-    // 子资源渲染：卡片式布局
-    const expandedRowRender = (record: any) => {
-        if (record.resourceLoading) {
-            return (
-                <div style={{ padding: '24px', textAlign: 'center', background: '#f8faff' }}>
-                    <Spin tip="加载资源中..." />
-                </div>
-            );
-        }
-
-        // 构建外部资源卡片数据
-        let externalResourceCard = null;
-        if (record.external_resources) {
-            const ext = record.external_resources;
-            // 只要有任何一个配置项有值，就显示卡片
-            const hasExternalConfig = ext.aliyun_oss || ext.database_config || ext.redis_config || ext.middleware_config || ext.other_config;
-            
-            if (hasExternalConfig) {
-                externalResourceCard = {
-                    resource_id: 'external-resources-summary',
-                    resource_type: '外部资源',
-                    name: '外部资源汇总',
-                    isExternal: true,
-                    data: ext
-                };
-            }
-        }
-
-        const subDataSource = [
-            ...(record.resources || []),
-            ...(externalResourceCard ? [externalResourceCard] : [])
-        ];
-
-        if (subDataSource.length === 0) {
-            return (
-                <div style={{ padding: '24px', textAlign: 'center', background: '#f8faff', color: '#86909c' }}>
-                    暂无子资源信息
-                </div>
-            );
-        }
+  const columns: TableColumnsType<ProjectTableRecord> = [
+    {
+      title: "项目名称",
+      dataIndex: "project_name",
+      key: "project_name",
+      width: 200,
+      ellipsis: true,
+      fixed: "left",
+    },
+    {
+      title: "项目类型",
+      dataIndex: "project_type",
+      key: "project_type",
+      width: 120,
+    },
+    {
+      title: "项目状态",
+      dataIndex: "project_status",
+      key: "project_status",
+      width: 120,
+      render: (status: string) => (
+        <Tag color={PROJECT_STATUS_COLORS[status] || "blue"}>{status}</Tag>
+      ),
+    },
+    {
+      title: "项目描述",
+      dataIndex: "project_desc",
+      key: "project_desc",
+      width: 220,
+      ellipsis: true,
+      render: (value: string | null) => value || "-",
+    },
+    {
+      title: "技术栈",
+      dataIndex: "tech_framework",
+      key: "tech_framework",
+      width: 220,
+      ellipsis: true,
+      render: (value: string | null) => value || "-",
+    },
+    {
+      title: "业务方",
+      dataIndex: "business_unit",
+      key: "business_unit",
+      width: 140,
+      ellipsis: true,
+    },
+    {
+      title: "业务类型",
+      dataIndex: "business_type",
+      key: "business_type",
+      width: 120,
+    },
+    {
+      title: "所属系统",
+      dataIndex: "belong_system",
+      key: "belong_system",
+      width: 140,
+      ellipsis: true,
+    },
+    {
+      title: "项目负责人",
+      key: "project_leaders",
+      width: 160,
+      render: (_, record) => formatMemberNames(record.project_leaders),
+    },
+    {
+      title: "更新时间",
+      dataIndex: "update_time",
+      key: "update_time",
+      width: 180,
+      render: (value: string) => dayjs(value).format("YYYY-MM-DD HH:mm"),
+    },
+    {
+      title: "备注",
+      dataIndex: "remarks",
+      key: "remarks",
+      width: 180,
+      ellipsis: true,
+      render: (value: string | null) => value || "-",
+    },
+    {
+      title: "操作",
+      key: "action",
+      width: 320,
+      fixed: "right",
+      render: (_, record) => {
+        const resources = record.resources || [];
+        const hasFrontend = resources.some(
+          (resource) => resource.resource_type === "前端",
+        );
+        const hasBackend = resources.some(
+          (resource) => resource.resource_type === "后端",
+        );
+        const isFull = hasFrontend && hasBackend;
 
         return (
-            <div style={{ background: '#f8faff' }}>
-                <Row gutter={[16, 16]}>
-                    {subDataSource.map((item: any) => (
-                        <Col span={8} key={item.isExternal ? item.resource_id : `res-${item.resource_id}`}>
-                            <Card
-                                size="small"
-                                bordered={false}
-                                title={
-                                    <Space>
-                                        <Tag color={item.isExternal ? 'orange' : (item.resource_type === '前端' ? 'blue' : 'green')}>
-                                            {item.resource_type}
-                                        </Tag>
-                                        <Text strong>{item.isExternal ? item.name : item.tech_framework}</Text>
-                                    </Space>
-                                }
-                                actions={[
-                                    <Button type="link" size="small" key="view" onClick={() => navigate(item.isExternal ? `/projects/${record.project_id}/external-resource/edit` : `/projects/${record.project_id}/resource/${item.resource_id}/edit`)}>查看</Button>,
-                                    <Button
-                                        type="link"
-                                        size="small"
-                                        key="edit"
-                                        onClick={() => navigate(item.isExternal ? `/projects/${record.project_id}/external-resource/edit` : `/projects/${record.project_id}/resource/${item.resource_id}/edit`)}
-                                    >
-                                        编辑
-                                    </Button>,
-                                    (item.isExternal || !item.isExternal) && (
-                                        <Button
-                                            type="link"
-                                            size="small"
-                                            danger
-                                            key="delete"
-                                            onClick={() => {
-                                                if (item.isExternal) {
-                                                    handleDeleteExternalResources(record.project_id);
-                                                } else {
-                                                    handleDeleteResource(record.project_id, item.resource_id, item.resource_type);
-                                                }
-                                            }}
-                                        >
-                                            删除
-                                        </Button>
-                                    )
-                                ].filter(Boolean) as React.ReactNode[]}
-                                styles={{ body: { padding: '12px' } }}
-                            >
-                                <Descriptions column={1} size="small" labelStyle={{ color: '#86909c' }}>
-                                    {!item.isExternal ? (
-                                        <>
-                                            <Descriptions.Item label={<span><GithubOutlined /> Git仓库</span>}>
-                                                <Text ellipsis={{ tooltip: item.git_repo }} style={{ maxWidth: 200 }}>
-                                                    {item.git_repo || '-'}
-                                                </Text>
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label={<span><PartitionOutlined /> 发布分支</span>}>
-                                                {item.deploy_branch || '-'}
-                                            </Descriptions.Item>
-                                            <Descriptions.Item label={<span><GlobalOutlined /> 生产域名</span>}>
-                                                <Text ellipsis={{ tooltip: item.prod_domain }} style={{ maxWidth: 200 }}>
-                                                    {item.prod_domain || '-'}
-                                                </Text>
-                                            </Descriptions.Item>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Descriptions.Item label={<span><CloudOutlined /> 配置概览</span>}>
-                                                <div style={{ fontSize: '12px', color: '#4e5969' }}>
-                                                    {item.data.aliyun_oss && <div style={{ marginBottom: 4 }}>• 阿里云OSS: 已配置</div>}
-                                                    {item.data.database_config && <div style={{ marginBottom: 4 }}>• 数据库: 已配置</div>}
-                                                    {item.data.redis_config && <div style={{ marginBottom: 4 }}>• Redis: 已配置</div>}
-                                                    {item.data.middleware_config && <div style={{ marginBottom: 4 }}>• 中间件: 已配置</div>}
-                                                    {item.data.other_config && <div>• 其他: 已配置</div>}
-                                                </div>
-                                            </Descriptions.Item>
-                                        </>
-                                    )}
-                                </Descriptions>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            </div>
+          <Space size="small">
+            <Button
+              type="link"
+              size="small"
+              icon={<PlusOutlined />}
+              disabled={isFull}
+              onClick={() => {
+                let targetType = "";
+                if (hasFrontend && !hasBackend) {
+                  targetType = "后端";
+                } else if (!hasFrontend && hasBackend) {
+                  targetType = "前端";
+                }
+                navigate(
+                  `/projects/${record.project_id}/resource/create${
+                    targetType ? `?type=${targetType}` : ""
+                  }`,
+                );
+              }}
+            >
+              添加资源
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              disabled={record.has_external_resources}
+              onClick={() =>
+                navigate(`/projects/${record.project_id}/external-resource/edit`)
+              }
+            >
+              添加外部资源
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => navigate(`/projects/${record.project_id}/edit`)}
+            >
+              编辑
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              danger
+              onClick={() => void handleDeleteProject(record)}
+            >
+              删除
+            </Button>
+          </Space>
         );
-    };
+      },
+    },
+  ];
+
+  const expandedRowRender = (record: ProjectTableRecord) => {
+    if (record.resourceLoading) {
+      return (
+        <div style={{ padding: 24, textAlign: "center", background: "#f8faff" }}>
+          <Spin tip="加载资源中..." />
+        </div>
+      );
+    }
+
+    const cards: Array<
+      | {
+          kind: "resource";
+          resource: ProjectResource;
+        }
+      | {
+          kind: "external";
+          resource: ProjectExternalResource;
+        }
+    > = [];
+
+    record.resources.forEach((resource) => {
+      cards.push({ kind: "resource", resource });
+    });
+
+    const external = record.external_resources;
+    const hasExternalConfig =
+      external &&
+      Boolean(
+        external.aliyun_oss ||
+          external.database_config ||
+          external.redis_config ||
+          external.middleware_config ||
+          external.other_config,
+      );
+    if (external && hasExternalConfig) {
+      cards.push({ kind: "external", resource: external });
+    }
+
+    if (cards.length === 0) {
+      return (
+        <div
+          style={{
+            padding: 24,
+            textAlign: "center",
+            background: "#f8faff",
+            color: "#86909c",
+          }}
+        >
+          暂无资源信息
+        </div>
+      );
+    }
 
     return (
-        <div className="space-y-4">
-            <Card>
-                <Row gutter={[24, 16]} align="middle" className="mb-6">
-                    <Col xs={24} sm={12} md={8} lg={6}>
-                        <div className="flex items-center gap-2">
-                            <span style={{ whiteSpace: 'nowrap' }}>项目类型:</span>
-                            <Select
-                                placeholder="请选择"
-                                style={{ width: '100%' }}
-                                allowClear
-                                value={queryParams.project_type}
-                                onChange={(val) => setQueryParams({ ...queryParams, project_type: val })}
-                            >
-                                <Option value="web应用">web应用</Option>
-                                <Option value="钉钉微应用">钉钉微应用</Option>
-                                <Option value="小程序">小程序</Option>
-                                <Option value="低代码">低代码</Option>
-                            </Select>
+      <div style={{ background: "#f8faff" }}>
+        <Row gutter={[16, 16]}>
+          {cards.map((card) => {
+            if (card.kind === "external") {
+              const resource = card.resource;
+              return (
+                <Col span={8} key={`external-${record.project_id}`}>
+                  <Card
+                    size="small"
+                    bordered={false}
+                    title={
+                      <Space>
+                        <Tag color="orange">外部资源</Tag>
+                        <Text strong>统一配置概览</Text>
+                      </Space>
+                    }
+                    actions={[
+                      <Button
+                        type="link"
+                        size="small"
+                        key="edit"
+                        onClick={() =>
+                          navigate(
+                            `/projects/${record.project_id}/external-resource/edit`,
+                          )
+                        }
+                      >
+                        编辑
+                      </Button>,
+                      <Button
+                        type="link"
+                        size="small"
+                        danger
+                        key="delete"
+                        onClick={() =>
+                          handleDeleteExternalResources(record.project_id)
+                        }
+                      >
+                        删除
+                      </Button>,
+                    ]}
+                    styles={{ body: { padding: 12 } }}
+                  >
+                    <Descriptions
+                      column={1}
+                      size="small"
+                      labelStyle={{ color: "#86909c" }}
+                    >
+                      <Descriptions.Item
+                        label={
+                          <span>
+                            <CloudOutlined /> 配置概览
+                          </span>
+                        }
+                      >
+                        <div style={{ fontSize: 12, color: "#4e5969" }}>
+                          {resource.aliyun_oss && (
+                            <div style={{ marginBottom: 4 }}>阿里云 OSS 已配置</div>
+                          )}
+                          {resource.database_config && (
+                            <div style={{ marginBottom: 4 }}>数据库配置已录入</div>
+                          )}
+                          {resource.redis_config && (
+                            <div style={{ marginBottom: 4 }}>Redis 配置已录入</div>
+                          )}
+                          {resource.middleware_config && (
+                            <div style={{ marginBottom: 4 }}>中间件配置已录入</div>
+                          )}
+                          {resource.other_config && <div>其他配置已录入</div>}
                         </div>
-                    </Col>
-                    <Col xs={24} sm={12} md={8} lg={6}>
-                        <div className="flex items-center gap-2">
-                            <span style={{ whiteSpace: 'nowrap' }}>项目状态:</span>
-                            <Select
-                                placeholder="请选择"
-                                style={{ width: '100%' }}
-                                allowClear
-                                value={queryParams.project_status}
-                                onChange={(val) => setQueryParams({ ...queryParams, project_status: val })}
-                            >
-                                <Option value="开发中">开发中</Option>
-                                <Option value="已上线">已上线</Option>
-                                <Option value="已下线">已下线</Option>
-                            </Select>
-                        </div>
-                    </Col>
-                    <Col xs={24} sm={12} md={8} lg={6}>
-                        <div className="flex items-center gap-2">
-                            <span style={{ whiteSpace: 'nowrap' }}>业务方:</span>
-                            <Select
-                                placeholder="请选择"
-                                style={{ width: '100%' }}
-                                allowClear
-                                value={queryParams.business_unit}
-                                onChange={(val) => setQueryParams({ ...queryParams, business_unit: val })}
-                            >
-                                <Option value="集团总部">集团总部</Option>
-                                <Option value="董事办">董事办</Option>
-                                <Option value="风控">风控</Option>
-                                <Option value="投管">投管</Option>
-                                <Option value="财务">财务</Option>
-                                <Option value="人力资源">人力资源</Option>
-                                <Option value="投融资">投融资</Option>
-                            </Select>
-                        </div>
-                    </Col>
-                    <Col xs={24} sm={12} md={8} lg={6}>
-                        <div className="flex items-center gap-2">
-                            <span style={{ whiteSpace: 'nowrap' }}>业务类型:</span>
-                            <Select
-                                placeholder="请选择"
-                                style={{ width: '100%' }}
-                                allowClear
-                                value={queryParams.business_type}
-                                onChange={(val) => setQueryParams({ ...queryParams, business_type: val })}
-                            >
-                                <Option value="运维">运维</Option>
-                                <Option value="运营">运营</Option>
-                                <Option value="新需求">新需求</Option>
-                            </Select>
-                        </div>
-                    </Col>
-                    <Col xs={24} sm={12} md={8} lg={6}>
-                        <div className="flex items-center gap-2">
-                            <span style={{ whiteSpace: 'nowrap' }}>项目负责人:</span>
-                            <Select
-                                placeholder="请选择"
-                                style={{ width: '100%' }}
-                                allowClear
-                                value={queryParams.project_leader}
-                                onChange={(val) => setQueryParams({ ...queryParams, project_leader: val })}
-                                showSearch
-                                optionFilterProp="children"
-                            >
-                                {members.map(member => (
-                                    <Option key={member.member_id} value={member.member_name}>{member.member_name}</Option>
-                                ))}
-                            </Select>
-                        </div>
-                    </Col>
-                    <Col xs={24} sm={12} md={8} lg={6}>
-                        <div className="flex items-center gap-2">
-                            <span style={{ whiteSpace: 'nowrap' }}>所属系统:</span>
-                            <Input
-                                placeholder="请输入系统名称"
-                                value={queryParams.belong_system}
-                                onChange={(e) => setQueryParams({ ...queryParams, belong_system: e.target.value })}
-                            />
-                        </div>
-                    </Col>
-                    <Col xs={24} sm={12} md={12} lg={8}>
-                        <div className="flex items-center gap-2">
-                            <span style={{ whiteSpace: 'nowrap' }}>更新时间:</span>
-                            <RangePicker
-                                style={{ width: '100%' }}
-                                value={queryParams.timeRange}
-                                onChange={(dates) => setQueryParams({ ...queryParams, timeRange: dates })}
-                            />
-                        </div>
-                    </Col>
-                </Row>
-                <div className="flex justify-center border-t pt-4">
-                    <Space size="middle">
-                        <Button type="primary" icon={<SearchOutlined />} onClick={fetchProjects}>查询</Button>
-                        <Button onClick={handleReset}>重置</Button>
-                        <Button
-                            type="primary"
-                            icon={<PlusOutlined />}
-                            onClick={() => navigate('/projects/create')}
-                        >
-                            创建项目
-                        </Button>
-                    </Space>
-                </div>
-            </Card>
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Card>
+                </Col>
+              );
+            }
 
-            <Card>
-                <Table
-                    columns={columns}
-                    expandable={{
-                        expandedRowRender,
-                        expandedRowKeys,
-                        onExpandedRowsChange: (keys) => setExpandedRowKeys(keys),
-                        onExpand: handleExpand
-                    }}
-                    dataSource={dataSource}
-                    loading={loading}
-                    tableLayout="fixed"
-                    scroll={{ x: 1870 }}
-                />
-            </Card>
-        </div>
+            const resource = card.resource;
+            return (
+              <Col span={8} key={`resource-${resource.resource_id}`}>
+                <Card
+                  size="small"
+                  bordered={false}
+                  title={
+                    <Space>
+                      <Tag
+                        color={resource.resource_type === "前端" ? "blue" : "green"}
+                      >
+                        {resource.resource_type}
+                      </Tag>
+                      <Text strong>{resource.tech_framework || "未填写技术栈"}</Text>
+                    </Space>
+                  }
+                  actions={[
+                    <Button
+                      type="link"
+                      size="small"
+                      key="edit"
+                      onClick={() =>
+                        navigate(
+                          `/projects/${record.project_id}/resource/${resource.resource_id}/edit`,
+                        )
+                      }
+                    >
+                      编辑
+                    </Button>,
+                    <Button
+                      type="link"
+                      size="small"
+                      danger
+                      key="delete"
+                      onClick={() =>
+                        handleDeleteResource(
+                          record.project_id,
+                          resource.resource_id,
+                          resource.resource_type,
+                        )
+                      }
+                    >
+                      删除
+                    </Button>,
+                  ]}
+                  styles={{ body: { padding: 12 } }}
+                >
+                  <Descriptions
+                    column={1}
+                    size="small"
+                    labelStyle={{ color: "#86909c" }}
+                  >
+                    <Descriptions.Item
+                      label={
+                        <span>
+                          <GithubOutlined /> Git 仓库
+                        </span>
+                      }
+                    >
+                      <Text ellipsis={{ tooltip: resource.git_repo || undefined }}>
+                        {resource.git_repo || "-"}
+                      </Text>
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={
+                        <span>
+                          <TeamOutlined /> 开发人员
+                        </span>
+                      }
+                    >
+                      {formatMemberNames(resource.developers)}
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={
+                        <span>
+                          <PartitionOutlined /> 发布分支
+                        </span>
+                      }
+                    >
+                      {resource.deploy_branch || "-"}
+                    </Descriptions.Item>
+                    <Descriptions.Item
+                      label={
+                        <span>
+                          <GlobalOutlined /> 生产域名
+                        </span>
+                      }
+                    >
+                      <Text
+                        ellipsis={{ tooltip: resource.prod_domain || undefined }}
+                      >
+                        {resource.prod_domain || "-"}
+                      </Text>
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              </Col>
+            );
+          })}
+        </Row>
+      </div>
     );
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <Row gutter={[24, 16]} align="middle" className="mb-6">
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <div className="flex items-center gap-2">
+              <span style={{ whiteSpace: "nowrap" }}>项目类型:</span>
+              <Select
+                placeholder="请选择"
+                style={{ width: "100%" }}
+                allowClear
+                value={filters.project_type}
+                onChange={(value) =>
+                  setFilters((previous) => ({ ...previous, project_type: value }))
+                }
+              >
+                {PROJECT_TYPE_OPTIONS.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <div className="flex items-center gap-2">
+              <span style={{ whiteSpace: "nowrap" }}>项目状态:</span>
+              <Select
+                placeholder="请选择"
+                style={{ width: "100%" }}
+                allowClear
+                value={filters.project_status}
+                onChange={(value) =>
+                  setFilters((previous) => ({
+                    ...previous,
+                    project_status: value,
+                  }))
+                }
+              >
+                {PROJECT_STATUS_OPTIONS.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <div className="flex items-center gap-2">
+              <span style={{ whiteSpace: "nowrap" }}>业务方:</span>
+              <Select
+                placeholder="请选择"
+                style={{ width: "100%" }}
+                allowClear
+                value={filters.business_unit}
+                onChange={(value) =>
+                  setFilters((previous) => ({ ...previous, business_unit: value }))
+                }
+              >
+                {BUSINESS_UNIT_OPTIONS.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <div className="flex items-center gap-2">
+              <span style={{ whiteSpace: "nowrap" }}>业务类型:</span>
+              <Select
+                placeholder="请选择"
+                style={{ width: "100%" }}
+                allowClear
+                value={filters.business_type}
+                onChange={(value) =>
+                  setFilters((previous) => ({ ...previous, business_type: value }))
+                }
+              >
+                {BUSINESS_TYPE_OPTIONS.map((option) => (
+                  <Select.Option key={option} value={option}>
+                    {option}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <div className="flex items-center gap-2">
+              <span style={{ whiteSpace: "nowrap" }}>项目负责人:</span>
+              <Select
+                placeholder="请选择"
+                style={{ width: "100%" }}
+                allowClear
+                value={filters.project_leader_id}
+                onChange={(value) =>
+                  setFilters((previous) => ({
+                    ...previous,
+                    project_leader_id: value,
+                  }))
+                }
+                showSearch
+                optionFilterProp="children"
+              >
+                {members.map((member) => (
+                  <Select.Option key={member.member_id} value={member.member_id}>
+                    {member.member_name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={8} lg={6}>
+            <div className="flex items-center gap-2">
+              <span style={{ whiteSpace: "nowrap" }}>所属系统:</span>
+              <Input
+                placeholder="请输入系统名称"
+                value={filters.belong_system}
+                onChange={(event) =>
+                  setFilters((previous) => ({
+                    ...previous,
+                    belong_system: event.target.value || undefined,
+                  }))
+                }
+              />
+            </div>
+          </Col>
+
+          <Col xs={24} sm={12} md={12} lg={8}>
+            <div className="flex items-center gap-2">
+              <span style={{ whiteSpace: "nowrap" }}>更新时间:</span>
+              <RangePicker
+                style={{ width: "100%" }}
+                value={filters.timeRange}
+                onChange={(dates) =>
+                  setFilters((previous) => ({
+                    ...previous,
+                    timeRange:
+                      dates && dates[0] && dates[1]
+                        ? [dates[0], dates[1]]
+                        : null,
+                  }))
+                }
+              />
+            </div>
+          </Col>
+        </Row>
+
+        <div className="flex justify-center border-t pt-4">
+          <Space size="middle">
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={handleSearch}
+            >
+              查询
+            </Button>
+            <Button onClick={handleReset}>重置</Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/projects/create")}
+            >
+              创建项目
+            </Button>
+          </Space>
+        </div>
+      </Card>
+
+      <Card>
+        <Table<ProjectTableRecord>
+          columns={columns}
+          expandable={{
+            expandedRowRender,
+            expandedRowKeys,
+            onExpandedRowsChange: (keys) => setExpandedRowKeys([...keys]),
+            onExpand: (expanded, record) => void handleExpand(expanded, record),
+          }}
+          dataSource={dataSource}
+          loading={loading}
+          tableLayout="fixed"
+          scroll={{ x: 1920 }}
+          pagination={{
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            showSizeChanger: true,
+            showTotal: (total) => `共 ${total} 条`,
+          }}
+          onChange={(pager) => {
+            void fetchProjects(filters, {
+              current: pager.current ?? 1,
+              pageSize: pager.pageSize ?? pagination.pageSize,
+              total: pagination.total,
+            });
+          }}
+        />
+      </Card>
+    </div>
+  );
 };
 
 export default ProjectList;
