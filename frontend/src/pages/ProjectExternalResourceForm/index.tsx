@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Button,
@@ -32,7 +32,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { StructuredExternalResourceFormValues } from "@/types/externalResource";
 import { getProjectExternalResources, updateProjectExternalResources } from "@/services/project";
 import {
-  parseExternalResource,
   serializeExternalResourceFormValues,
   toExternalResourceFormValues,
 } from "@/utils/externalResource";
@@ -297,18 +296,10 @@ const ProjectExternalResourceForm: React.FC = () => {
   const [form] = Form.useForm<StructuredExternalResourceFormValues>();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [legacySections, setLegacySections] = useState<string[]>([]);
 
   useEffect(() => {
     void fetchResourceData();
   }, [projectId]);
-
-  const legacyNotice = useMemo(() => {
-    if (legacySections.length === 0) {
-      return null;
-    }
-    return `检测到旧版文本配置：${legacySections.join("、")}。已自动转入补充说明，建议补齐结构化字段后保存。`;
-  }, [legacySections]);
 
   const fetchResourceData = async () => {
     if (!projectId) {
@@ -318,12 +309,6 @@ const ProjectExternalResourceForm: React.FC = () => {
     setLoading(true);
     try {
       const data = await getProjectExternalResources(Number(projectId));
-      const parsed = parseExternalResource(data);
-      setLegacySections(
-        SECTION_CONFIGS.filter(({ key }) => parsed[key].source === "legacy-text").map(
-          ({ title }) => title,
-        ),
-      );
       form.setFieldsValue(toExternalResourceFormValues(data));
     } catch (error) {
       message.error("获取外部资源信息失败");
@@ -387,16 +372,6 @@ const ProjectExternalResourceForm: React.FC = () => {
       bordered={false}
       style={{ boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)" }}
     >
-      {legacyNotice ? (
-        <Alert
-          type="warning"
-          showIcon
-          message="已自动兼容旧版文本配置"
-          description={legacyNotice}
-          style={{ marginBottom: 24, borderRadius: 8 }}
-        />
-      ) : null}
-
       <Form<StructuredExternalResourceFormValues>
         form={form}
         layout="vertical"

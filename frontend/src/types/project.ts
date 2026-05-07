@@ -1,4 +1,8 @@
 import type { PaginatedResponse } from "@/types/common";
+import type {
+  StructuredExternalResource,
+  StructuredExternalResourceFormValues,
+} from "@/types/externalResource";
 import type { MemberBrief } from "@/types/member";
 
 export interface ProjectSummary {
@@ -91,28 +95,14 @@ export interface ProjectResourceUpdatePayload
   developer_ids?: number[];
 }
 
-export interface ProjectExternalResource {
+export interface ProjectExternalResource extends StructuredExternalResource {
   external_id: number;
   project_id: number;
-  aliyun_oss: string | null;
-  database_config: string | null;
-  redis_config: string | null;
-  middleware_config: string | null;
-  other_config: string | null;
   create_time: string;
   update_time: string;
 }
 
-export type ProjectExternalResourceUpdatePayload = Partial<
-  Pick<
-    ProjectExternalResource,
-    | "aliyun_oss"
-    | "database_config"
-    | "redis_config"
-    | "middleware_config"
-    | "other_config"
-  >
->;
+export type ProjectExternalResourceUpdatePayload = StructuredExternalResourceFormValues;
 
 export interface ProjectResourcesPayload {
   resources: ProjectResource[];

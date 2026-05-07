@@ -1,5 +1,3 @@
-export type StructuredSectionSource = "structured" | "legacy-text" | "empty";
-
 export interface ExternalOssItem {
   name?: string;
   bucket_name?: string;
@@ -45,15 +43,12 @@ export interface ExternalOtherItem {
   notes?: string;
 }
 
-export interface EditableStructuredSection<T> {
+export interface StructuredSection<T> {
   items: T[];
-  notes?: string;
+  notes: string;
 }
 
-export interface StructuredSection<T> extends EditableStructuredSection<T> {
-  source: StructuredSectionSource;
-  rawText: string | null;
-}
+export type EditableStructuredSection<T> = StructuredSection<T>;
 
 export interface StructuredExternalResource {
   aliyun_oss: StructuredSection<ExternalOssItem>;
@@ -64,9 +59,9 @@ export interface StructuredExternalResource {
 }
 
 export interface StructuredExternalResourceFormValues {
-  aliyun_oss: EditableStructuredSection<ExternalOssItem>;
-  database_config: EditableStructuredSection<ExternalDatabaseItem>;
-  redis_config: EditableStructuredSection<ExternalRedisItem>;
-  middleware_config: EditableStructuredSection<ExternalMiddlewareItem>;
-  other_config: EditableStructuredSection<ExternalOtherItem>;
+  aliyun_oss: StructuredSection<ExternalOssItem>;
+  database_config: StructuredSection<ExternalDatabaseItem>;
+  redis_config: StructuredSection<ExternalRedisItem>;
+  middleware_config: StructuredSection<ExternalMiddlewareItem>;
+  other_config: StructuredSection<ExternalOtherItem>;
 }

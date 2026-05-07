@@ -11,6 +11,74 @@ from app.schemas import project as project_schema
 
 router = APIRouter(dependencies=[Depends(deps.get_current_active_user)])
 
+EXTERNAL_RESOURCE_SECTION_CONFIG: dict[str, dict[str, Any]] = {
+    "aliyun_oss": {
+        "notes_attr": "aliyun_oss_notes",
+        "items_attr": "aliyun_oss_items",
+        "item_model": project_model.ProjectExternalOssItem,
+        "fields": (
+            "name",
+            "bucket_name",
+            "endpoint",
+            "region",
+            "environment",
+            "access_path",
+            "notes",
+        ),
+    },
+    "database_config": {
+        "notes_attr": "database_config_notes",
+        "items_attr": "database_config_items",
+        "item_model": project_model.ProjectExternalDatabaseItem,
+        "fields": (
+            "name",
+            "engine",
+            "host",
+            "port",
+            "database_name",
+            "account_name",
+            "environment",
+            "notes",
+        ),
+    },
+    "redis_config": {
+        "notes_attr": "redis_config_notes",
+        "items_attr": "redis_config_items",
+        "item_model": project_model.ProjectExternalRedisItem,
+        "fields": (
+            "name",
+            "host",
+            "port",
+            "database_index",
+            "environment",
+            "notes",
+        ),
+    },
+    "middleware_config": {
+        "notes_attr": "middleware_config_notes",
+        "items_attr": "middleware_config_items",
+        "item_model": project_model.ProjectExternalMiddlewareItem,
+        "fields": (
+            "name",
+            "middleware_type",
+            "endpoint",
+            "environment",
+            "notes",
+        ),
+    },
+    "other_config": {
+        "notes_attr": "other_config_notes",
+        "items_attr": "other_config_items",
+        "item_model": project_model.ProjectExternalOtherItem,
+        "fields": (
+            "name",
+            "config_summary",
+            "environment",
+            "notes",
+        ),
+    },
+}
+
 
 def _dedupe_ids(member_ids: list[int]) -> list[int]:
     return list(dict.fromkeys(member_ids))
@@ -91,6 +159,167 @@ def _get_resource_with_relations(
     if not resource:
         raise HTTPException(status_code=404, detail="Resource not found")
     return resource
+
+
+def _ensure_project_exists(db: Session, project_id: int) -> None:
+    exists = (
+        db.query(project_model.ProjectBase.project_id)
+        .filter(project_model.ProjectBase.project_id == project_id)
+        .first()
+    )
+    if not exists:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+
+def _project_external_resource_loads() -> tuple[Any, ...]:
+    return (
+        selectinload(project_model.ProjectBase.external_resources).selectinload(
+            project_model.ProjectExternalResource.aliyun_oss_items
+        ),
+        selectinload(project_model.ProjectBase.external_resources).selectinload(
+            project_model.ProjectExternalResource.database_config_items
+        ),
+        selectinload(project_model.ProjectBase.external_resources).selectinload(
+            project_model.ProjectExternalResource.redis_config_items
+        ),
+        selectinload(project_model.ProjectBase.external_resources).selectinload(
+            project_model.ProjectExternalResource.middleware_config_items
+        ),
+        selectinload(project_model.ProjectBase.external_resources).selectinload(
+            project_model.ProjectExternalResource.other_config_items
+        ),
+    )
+
+
+def _external_resource_loads() -> tuple[Any, ...]:
+    return (
+        selectinload(project_model.ProjectExternalResource.aliyun_oss_items),
+        selectinload(project_model.ProjectExternalResource.database_config_items),
+        selectinload(project_model.ProjectExternalResource.redis_config_items),
+        selectinload(project_model.ProjectExternalResource.middleware_config_items),
+        selectinload(project_model.ProjectExternalResource.other_config_items),
+    )
+
+
+def _get_external_resource(
+    db: Session,
+    project_id: int,
+) -> project_model.ProjectExternalResource | None:
+    return (
+        db.query(project_model.ProjectExternalResource)
+        .options(*_external_resource_loads())
+        .filter(project_model.ProjectExternalResource.project_id == project_id)
+        .first()
+    )
+
+
+def _clean_text(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
+def _normalize_external_section(section: Any) -> dict[str, Any]:
+    normalized_items: list[dict[str, Any]] = []
+    for item in getattr(section, "items", []):
+        cleaned_item: dict[str, Any] = {}
+        for key, value in item.model_dump(exclude_none=True).items():
+            if isinstance(value, str):
+                cleaned_value = value.strip()
+                if cleaned_value:
+                    cleaned_item[key] = cleaned_value
+                continue
+            if value is not None:
+                cleaned_item[key] = value
+        if cleaned_item:
+            normalized_items.append(cleaned_item)
+
+    return {
+        "items": normalized_items,
+        "notes": _clean_text(getattr(section, "notes", None)) or "",
+    }
+
+
+def _normalize_external_resource_payload(
+    resource_in: project_schema.ProjectExternalResourceBase,
+) -> dict[str, dict[str, Any]]:
+    return {
+        section_key: _normalize_external_section(getattr(resource_in, section_key))
+        for section_key in EXTERNAL_RESOURCE_SECTION_CONFIG
+    }
+
+
+def _has_external_resource_content(normalized_sections: dict[str, dict[str, Any]]) -> bool:
+    return any(
+        section["items"] or section["notes"]
+        for section in normalized_sections.values()
+    )
+
+
+def _apply_external_resource_payload(
+    resource: project_model.ProjectExternalResource,
+    normalized_sections: dict[str, dict[str, Any]],
+) -> None:
+    for section_key, config in EXTERNAL_RESOURCE_SECTION_CONFIG.items():
+        normalized_section = normalized_sections[section_key]
+        setattr(resource, config["notes_attr"], normalized_section["notes"] or None)
+        setattr(
+            resource,
+            config["items_attr"],
+            [
+                config["item_model"](sort_order=index, **item_data)
+                for index, item_data in enumerate(normalized_section["items"], start=1)
+            ],
+        )
+
+
+def _empty_external_resource_payload(project_id: int) -> dict[str, Any]:
+    now = datetime.utcnow()
+    return {
+        "external_id": 0,
+        "project_id": project_id,
+        "aliyun_oss": {"items": [], "notes": ""},
+        "database_config": {"items": [], "notes": ""},
+        "redis_config": {"items": [], "notes": ""},
+        "middleware_config": {"items": [], "notes": ""},
+        "other_config": {"items": [], "notes": ""},
+        "create_time": now,
+        "update_time": now,
+    }
+
+
+def _serialize_external_resource(
+    resource: project_model.ProjectExternalResource | None,
+    project_id: int,
+) -> dict[str, Any]:
+    if not resource:
+        return _empty_external_resource_payload(project_id)
+
+    payload: dict[str, Any] = {
+        "external_id": resource.external_id,
+        "project_id": resource.project_id,
+        "create_time": resource.create_time,
+        "update_time": resource.update_time,
+    }
+
+    for section_key, config in EXTERNAL_RESOURCE_SECTION_CONFIG.items():
+        items: list[dict[str, Any]] = []
+        for item in getattr(resource, config["items_attr"]):
+            item_payload: dict[str, Any] = {}
+            for field in config["fields"]:
+                value = getattr(item, field)
+                if isinstance(value, str):
+                    value = value.strip()
+                if value:
+                    item_payload[field] = value
+            items.append(item_payload)
+        payload[section_key] = {
+            "items": items,
+            "notes": getattr(resource, config["notes_attr"]) or "",
+        }
+
+    return payload
 
 
 @router.get("/", response_model=project_schema.ProjectPage)
@@ -262,7 +491,7 @@ def read_project_resources(
             selectinload(project_model.ProjectBase.resources).selectinload(
                 project_model.ProjectResource.developers
             ),
-            selectinload(project_model.ProjectBase.external_resources),
+            *_project_external_resource_loads(),
         )
         .filter(project_model.ProjectBase.project_id == project_id)
         .first()
@@ -272,7 +501,11 @@ def read_project_resources(
 
     return project_schema.ProjectResources(
         resources=project.resources,
-        external_resources=project.external_resources,
+        external_resources=(
+            _serialize_external_resource(project.external_resources, project.project_id)
+            if project.external_resources
+            else None
+        ),
     )
 
 
@@ -379,24 +612,9 @@ def read_project_external_resources(
     project_id: int,
     db: Session = Depends(deps.get_db),
 ) -> Any:
-    resource = db.query(project_model.ProjectExternalResource).filter(
-        project_model.ProjectExternalResource.project_id == project_id
-    ).first()
-
-    if not resource:
-        return project_schema.ProjectExternalResource(
-            external_id=0,
-            project_id=project_id,
-            aliyun_oss=None,
-            database_config=None,
-            redis_config=None,
-            middleware_config=None,
-            other_config=None,
-            create_time=datetime.utcnow(),
-            update_time=datetime.utcnow(),
-        )
-
-    return resource
+    _ensure_project_exists(db, project_id)
+    resource = _get_external_resource(db, project_id)
+    return _serialize_external_resource(resource, project_id)
 
 
 @router.put("/{project_id}/external-resources", response_model=project_schema.ProjectExternalResource)
@@ -412,27 +630,22 @@ def update_project_external_resources(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    resource = db.query(project_model.ProjectExternalResource).filter(
-        project_model.ProjectExternalResource.project_id == project_id
-    ).first()
-    if not resource:
-        db_obj = project_model.ProjectExternalResource(
-            **resource_in.model_dump(),
-            project_id=project_id,
-        )
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
+    normalized_sections = _normalize_external_resource_payload(resource_in)
+    resource = _get_external_resource(db, project_id)
+    if not _has_external_resource_content(normalized_sections):
+        if resource:
+            db.delete(resource)
+            db.commit()
+        return _empty_external_resource_payload(project_id)
 
-    update_data = resource_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(resource, field, value)
+    if not resource:
+        resource = project_model.ProjectExternalResource(project_id=project_id)
+
+    _apply_external_resource_payload(resource, normalized_sections)
 
     db.add(resource)
     db.commit()
-    db.refresh(resource)
-    return resource
+    return _serialize_external_resource(_get_external_resource(db, project_id), project_id)
 
 
 @router.delete("/{project_id}/external-resources")
@@ -441,9 +654,8 @@ def delete_project_external_resources(
     db: Session = Depends(deps.get_db),
     project_id: int,
 ) -> Any:
-    resource = db.query(project_model.ProjectExternalResource).filter(
-        project_model.ProjectExternalResource.project_id == project_id
-    ).first()
+    _ensure_project_exists(db, project_id)
+    resource = _get_external_resource(db, project_id)
     if resource:
         db.delete(resource)
         db.commit()

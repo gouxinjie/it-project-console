@@ -54,6 +54,11 @@ import type {
   ProjectResource,
   ProjectSummary,
 } from "@/types/project";
+import {
+  hasExternalResourceContent,
+  hasStructuredSectionContent,
+  normalizeExternalResource,
+} from "@/utils/externalResource";
 
 const { RangePicker } = DatePicker;
 const { confirm } = Modal;
@@ -199,7 +204,9 @@ const ProjectList: React.FC = () => {
               ...item,
               resources: response.resources,
               external_resources: response.external_resources,
-              has_external_resources: Boolean(response.external_resources),
+              has_external_resources: hasExternalResourceContent(
+                response.external_resources,
+              ),
               hasLoadedResources: true,
               resourceLoading: false,
             }
@@ -248,7 +255,7 @@ const ProjectList: React.FC = () => {
       const resourceSummary = await getProjectResources(record.project_id);
       const hasResources =
         resourceSummary.resources.length > 0 ||
-        Boolean(resourceSummary.external_resources);
+        hasExternalResourceContent(resourceSummary.external_resources);
 
       if (hasResources) {
         Modal.warning({
@@ -538,16 +545,7 @@ const ProjectList: React.FC = () => {
     });
 
     const external = record.external_resources;
-    const hasExternalConfig =
-      external &&
-      Boolean(
-        external.aliyun_oss ||
-          external.database_config ||
-          external.redis_config ||
-          external.middleware_config ||
-          external.other_config,
-      );
-    if (external && hasExternalConfig) {
+    if (external && hasExternalResourceContent(external)) {
       cards.push({ kind: "external", resource: external });
     }
 
@@ -564,7 +562,7 @@ const ProjectList: React.FC = () => {
         <Row gutter={[20, 20]}>
           {cards.map((card) => {
             if (card.kind === "external") {
-              const resource = card.resource;
+              const resource = normalizeExternalResource(card.resource);
               return (
                 <Col span={8} key={`external-${record.project_id}`}>
                   <Card
@@ -618,19 +616,19 @@ const ProjectList: React.FC = () => {
                         }
                       >
                         <div style={{ color: "#475569" }}>
-                          {resource.aliyun_oss && (
+                          {hasStructuredSectionContent(resource.aliyun_oss) && (
                             <div style={{ marginBottom: 4 }}>阿里云 OSS 已配置</div>
                           )}
-                          {resource.database_config && (
+                          {hasStructuredSectionContent(resource.database_config) && (
                             <div style={{ marginBottom: 4 }}>数据库配置已录入</div>
                           )}
-                          {resource.redis_config && (
+                          {hasStructuredSectionContent(resource.redis_config) && (
                             <div style={{ marginBottom: 4 }}>Redis 配置已录入</div>
                           )}
-                          {resource.middleware_config && (
+                          {hasStructuredSectionContent(resource.middleware_config) && (
                             <div style={{ marginBottom: 4 }}>中间件配置已录入</div>
                           )}
-                          {resource.other_config && <div>其他配置已录入</div>}
+                          {hasStructuredSectionContent(resource.other_config) && <div>其他配置已录入</div>}
                         </div>
                       </Descriptions.Item>
                     </Descriptions>

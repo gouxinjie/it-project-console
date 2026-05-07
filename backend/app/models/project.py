@@ -9,16 +9,36 @@ from app.db.base_class import Base
 project_leader_assignment = Table(
     "project_leader_assignment",
     Base.metadata,
-    Column("project_id", Integer, ForeignKey("project_base.project_id", ondelete="CASCADE"), primary_key=True),
-    Column("member_id", Integer, ForeignKey("project_member.member_id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "project_id",
+        Integer,
+        ForeignKey("project_base.project_id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "member_id",
+        Integer,
+        ForeignKey("project_member.member_id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
 project_resource_developer_assignment = Table(
     "project_resource_developer_assignment",
     Base.metadata,
-    Column("resource_id", Integer, ForeignKey("project_resource.resource_id", ondelete="CASCADE"), primary_key=True),
-    Column("member_id", Integer, ForeignKey("project_member.member_id", ondelete="CASCADE"), primary_key=True),
+    Column(
+        "resource_id",
+        Integer,
+        ForeignKey("project_resource.resource_id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "member_id",
+        Integer,
+        ForeignKey("project_member.member_id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
@@ -65,7 +85,12 @@ class ProjectResource(Base):
     __tablename__ = "project_resource"
 
     resource_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    project_id = Column(Integer, ForeignKey("project_base.project_id"), nullable=False, index=True)
+    project_id = Column(
+        Integer,
+        ForeignKey("project_base.project_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     resource_type = Column(String(20), nullable=False, index=True)
     git_repo = Column(String(200), nullable=True)
     deploy_branch = Column(String(50), nullable=True)
@@ -97,13 +122,166 @@ class ProjectExternalResource(Base):
     __tablename__ = "project_external_resource"
 
     external_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    project_id = Column(Integer, ForeignKey("project_base.project_id"), nullable=False, index=True)
-    aliyun_oss = Column(Text, nullable=True)
-    database_config = Column(Text, nullable=True)
-    redis_config = Column(Text, nullable=True)
-    middleware_config = Column(Text, nullable=True)
-    other_config = Column(Text, nullable=True)
+    project_id = Column(
+        Integer,
+        ForeignKey("project_base.project_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    aliyun_oss_notes = Column(Text, nullable=True)
+    database_config_notes = Column(Text, nullable=True)
+    redis_config_notes = Column(Text, nullable=True)
+    middleware_config_notes = Column(Text, nullable=True)
+    other_config_notes = Column(Text, nullable=True)
     create_time = Column(DateTime, default=datetime.utcnow, nullable=False)
     update_time = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     project = relationship("ProjectBase", back_populates="external_resources")
+    aliyun_oss_items = relationship(
+        "ProjectExternalOssItem",
+        back_populates="external_resource",
+        cascade="all, delete-orphan",
+        order_by=lambda: (ProjectExternalOssItem.sort_order, ProjectExternalOssItem.item_id),
+    )
+    database_config_items = relationship(
+        "ProjectExternalDatabaseItem",
+        back_populates="external_resource",
+        cascade="all, delete-orphan",
+        order_by=lambda: (
+            ProjectExternalDatabaseItem.sort_order,
+            ProjectExternalDatabaseItem.item_id,
+        ),
+    )
+    redis_config_items = relationship(
+        "ProjectExternalRedisItem",
+        back_populates="external_resource",
+        cascade="all, delete-orphan",
+        order_by=lambda: (ProjectExternalRedisItem.sort_order, ProjectExternalRedisItem.item_id),
+    )
+    middleware_config_items = relationship(
+        "ProjectExternalMiddlewareItem",
+        back_populates="external_resource",
+        cascade="all, delete-orphan",
+        order_by=lambda: (
+            ProjectExternalMiddlewareItem.sort_order,
+            ProjectExternalMiddlewareItem.item_id,
+        ),
+    )
+    other_config_items = relationship(
+        "ProjectExternalOtherItem",
+        back_populates="external_resource",
+        cascade="all, delete-orphan",
+        order_by=lambda: (ProjectExternalOtherItem.sort_order, ProjectExternalOtherItem.item_id),
+    )
+
+
+class ProjectExternalOssItem(Base):
+    __tablename__ = "project_external_oss_item"
+
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    external_id = Column(
+        Integer,
+        ForeignKey("project_external_resource.external_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sort_order = Column(Integer, nullable=False, default=1)
+    name = Column(String(100), nullable=True)
+    bucket_name = Column(String(100), nullable=True)
+    endpoint = Column(String(200), nullable=True)
+    region = Column(String(100), nullable=True)
+    environment = Column(String(50), nullable=True)
+    access_path = Column(String(200), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    external_resource = relationship("ProjectExternalResource", back_populates="aliyun_oss_items")
+
+
+class ProjectExternalDatabaseItem(Base):
+    __tablename__ = "project_external_database_item"
+
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    external_id = Column(
+        Integer,
+        ForeignKey("project_external_resource.external_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sort_order = Column(Integer, nullable=False, default=1)
+    name = Column(String(100), nullable=True)
+    engine = Column(String(50), nullable=True)
+    host = Column(String(200), nullable=True)
+    port = Column(String(20), nullable=True)
+    database_name = Column(String(100), nullable=True)
+    account_name = Column(String(100), nullable=True)
+    environment = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    external_resource = relationship(
+        "ProjectExternalResource",
+        back_populates="database_config_items",
+    )
+
+
+class ProjectExternalRedisItem(Base):
+    __tablename__ = "project_external_redis_item"
+
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    external_id = Column(
+        Integer,
+        ForeignKey("project_external_resource.external_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sort_order = Column(Integer, nullable=False, default=1)
+    name = Column(String(100), nullable=True)
+    host = Column(String(200), nullable=True)
+    port = Column(String(20), nullable=True)
+    database_index = Column(String(20), nullable=True)
+    environment = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    external_resource = relationship("ProjectExternalResource", back_populates="redis_config_items")
+
+
+class ProjectExternalMiddlewareItem(Base):
+    __tablename__ = "project_external_middleware_item"
+
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    external_id = Column(
+        Integer,
+        ForeignKey("project_external_resource.external_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sort_order = Column(Integer, nullable=False, default=1)
+    name = Column(String(100), nullable=True)
+    middleware_type = Column(String(50), nullable=True)
+    endpoint = Column(String(200), nullable=True)
+    environment = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    external_resource = relationship(
+        "ProjectExternalResource",
+        back_populates="middleware_config_items",
+    )
+
+
+class ProjectExternalOtherItem(Base):
+    __tablename__ = "project_external_other_item"
+
+    item_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    external_id = Column(
+        Integer,
+        ForeignKey("project_external_resource.external_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    sort_order = Column(Integer, nullable=False, default=1)
+    name = Column(String(100), nullable=True)
+    config_summary = Column(String(200), nullable=True)
+    environment = Column(String(50), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    external_resource = relationship("ProjectExternalResource", back_populates="other_config_items")

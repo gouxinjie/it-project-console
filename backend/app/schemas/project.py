@@ -143,12 +143,82 @@ class ProjectResource(ProjectResourceFields):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ExternalOssItem(BaseModel):
+    name: Optional[str] = None
+    bucket_name: Optional[str] = None
+    endpoint: Optional[str] = None
+    region: Optional[str] = None
+    environment: Optional[str] = None
+    access_path: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ExternalDatabaseItem(BaseModel):
+    name: Optional[str] = None
+    engine: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[str] = None
+    database_name: Optional[str] = None
+    account_name: Optional[str] = None
+    environment: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ExternalRedisItem(BaseModel):
+    name: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[str] = None
+    database_index: Optional[str] = None
+    environment: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ExternalMiddlewareItem(BaseModel):
+    name: Optional[str] = None
+    middleware_type: Optional[str] = None
+    endpoint: Optional[str] = None
+    environment: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ExternalOtherItem(BaseModel):
+    name: Optional[str] = None
+    config_summary: Optional[str] = None
+    environment: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ExternalOssSection(BaseModel):
+    items: list[ExternalOssItem] = Field(default_factory=list)
+    notes: str = ""
+
+
+class ExternalDatabaseSection(BaseModel):
+    items: list[ExternalDatabaseItem] = Field(default_factory=list)
+    notes: str = ""
+
+
+class ExternalRedisSection(BaseModel):
+    items: list[ExternalRedisItem] = Field(default_factory=list)
+    notes: str = ""
+
+
+class ExternalMiddlewareSection(BaseModel):
+    items: list[ExternalMiddlewareItem] = Field(default_factory=list)
+    notes: str = ""
+
+
+class ExternalOtherSection(BaseModel):
+    items: list[ExternalOtherItem] = Field(default_factory=list)
+    notes: str = ""
+
+
 class ProjectExternalResourceBase(BaseModel):
-    aliyun_oss: Optional[str] = None
-    database_config: Optional[str] = None
-    redis_config: Optional[str] = None
-    middleware_config: Optional[str] = None
-    other_config: Optional[str] = None
+    aliyun_oss: ExternalOssSection = Field(default_factory=ExternalOssSection)
+    database_config: ExternalDatabaseSection = Field(default_factory=ExternalDatabaseSection)
+    redis_config: ExternalRedisSection = Field(default_factory=ExternalRedisSection)
+    middleware_config: ExternalMiddlewareSection = Field(default_factory=ExternalMiddlewareSection)
+    other_config: ExternalOtherSection = Field(default_factory=ExternalOtherSection)
 
 
 class ProjectExternalResourceCreate(ProjectExternalResourceBase):
@@ -164,8 +234,6 @@ class ProjectExternalResource(ProjectExternalResourceBase):
     project_id: int
     create_time: datetime
     update_time: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class ProjectSummary(ProjectFields):

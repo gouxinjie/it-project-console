@@ -44,7 +44,7 @@ import type {
 import {
   hasStructuredSectionContent,
   hasStructuredSectionItems,
-  parseExternalResource,
+  normalizeExternalResource,
 } from "@/utils/externalResource";
 
 const { Paragraph, Text, Title } = Typography;
@@ -232,15 +232,7 @@ function buildWarnings(
 
   for (const descriptor of SECTION_DESCRIPTORS) {
     const section = structuredExternal[descriptor.key];
-    if (section.source === "legacy-text") {
-      warnings.push({
-        level: "warning",
-        message: `${descriptor.title}仍是旧版文本格式，建议重新保存为结构化配置。`,
-      });
-      continue;
-    }
-
-    if (section.items.length === 0 && section.notes?.trim()) {
+    if (section.items.length === 0 && section.notes.trim()) {
       warnings.push({
         level: "warning",
         message: `${descriptor.title}目前只有备注说明，尚未补齐结构化字段。`,
@@ -346,16 +338,6 @@ function SectionCard({
           style={{ marginTop: section.items.length > 0 ? 16 : 0 }}
         />
       ) : null}
-
-      {section.rawText ? (
-        <Alert
-          type="warning"
-          showIcon
-          message="旧版文本内容"
-          description={section.rawText}
-          style={{ marginTop: 16 }}
-        />
-      ) : null}
     </Card>
   );
 }
@@ -372,7 +354,7 @@ const ProjectDetail: React.FC = () => {
   }, [id]);
 
   const externalResource = useMemo(
-    () => parseExternalResource(resourcesPayload?.external_resources),
+    () => normalizeExternalResource(resourcesPayload?.external_resources),
     [resourcesPayload],
   );
 

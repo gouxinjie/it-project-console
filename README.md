@@ -60,8 +60,9 @@ pro-manage-2/
 │   │   ├── schemas/        # Pydantic 数据验证模型
 │   │   └── main.py         # 程序入口
 │   ├── init_db.py          # 数据库初始化脚本
-│   ├── seed_data.py        # 演示数据填充脚本 (Python)
-│   ├── init_data.sql       # 演示数据填充脚本 (SQL)
+│   ├── seed_data.py        # 演示数据填充脚本
+│   ├── reset_db.py         # 重建表结构并重新灌入演示数据
+│   ├── init_data.sql       # 已废弃，保留说明用途
 │   └── requirements.txt    # Python 依赖清单
 ├── frontend/               # 前端项目目录
 │   ├── src/                # 源代码
@@ -84,7 +85,7 @@ pro-manage-2/
 该脚本会自动执行以下操作：
 1. 检查环境依赖
 2. 安装后端 Python 依赖
-3. 初始化数据库表结构并填充演示数据
+3. 初始化数据库表结构并按需填充演示数据
 4. 安装前端 pnpm 依赖
 5. 启动前后端服务
 
@@ -124,12 +125,15 @@ pro-manage-2/
    python init_db.py
    ```
 4. 填充演示数据 (包含默认管理员账户):
-   - **方式一 (推荐)**: 使用 Python 脚本
+   - 仅重灌演示数据:
      ```bash
      python seed_data.py
      ```
-   - **方式二**: 使用 SQL 脚本
-     将 `backend/init_data.sql` 导入到数据库中。
+   - 高风险重建表结构并重新初始化:
+     ```bash
+     python reset_db.py --confirm RESET
+     ```
+   - `backend/init_data.sql` 已废弃，不再用于当前结构化外部依赖表。
 
 5. 运行服务:
    ```bash

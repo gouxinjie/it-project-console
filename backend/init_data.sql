@@ -1,32 +1,10 @@
-SET FOREIGN_KEY_CHECKS=0;
-TRUNCATE TABLE project_external_resource;
-TRUNCATE TABLE project_resource;
-TRUNCATE TABLE project_base;
-TRUNCATE TABLE project_member;
-TRUNCATE TABLE user;
-INSERT INTO user (id, username, email, hashed_password, is_active, is_superuser, create_time, last_login) VALUES (1, 'admin', 'admin@proman.com', '$2b$12$fc.jnoXrAoZDT/yH2.tVsOT7.2jwnOX9faRIZkKWukfe3lsaShTuq', 1, 1, '2026-03-02 08:45:24', '2026-03-03 06:24:06');
-INSERT INTO user (id, username, email, hashed_password, is_active, is_superuser, create_time, last_login) VALUES (2, 'xinjie', '2562755718@qq.com', '$2b$12$eKBbX//vI9XLmwXZIxYQ3u1mbkX0qlDfWZ.vpgzd6YJqBk4kezNry', 1, 0, '2026-03-03 01:55:47', NULL);
-INSERT INTO project_member (member_id, member_name, position, tech_stack, phone, email, create_time, update_time) VALUES (42, '张伟', '高级前端开发工程师', 'React, TypeScript, Ant Design, Next.js', '13800138001', 'zhangwei@example.com', '2026-03-03 06:33:14', '2026-03-03 06:33:14');
-INSERT INTO project_member (member_id, member_name, position, tech_stack, phone, email, create_time, update_time) VALUES (43, '李娜', '资深后端开发工程师', 'FastAPI, Python, PostgreSQL, Redis', '13800138002', 'lina@example.com', '2026-03-03 06:33:14', '2026-03-03 06:33:14');
-INSERT INTO project_member (member_id, member_name, position, tech_stack, phone, email, create_time, update_time) VALUES (44, '王强', '全栈开发工程师', 'Vue, Spring Boot, MySQL, Docker', '13800138003', 'wangqiang@example.com', '2026-03-03 06:33:14', '2026-03-03 06:33:14');
-INSERT INTO project_member (member_id, member_name, position, tech_stack, phone, email, create_time, update_time) VALUES (45, '赵敏', 'UI/UX 设计师', 'Figma, Adobe XD, Photoshop', '13800138004', 'zhaomin@example.com', '2026-03-03 06:33:14', '2026-03-03 06:33:14');
-INSERT INTO project_member (member_id, member_name, position, tech_stack, phone, email, create_time, update_time) VALUES (46, '孙悟空', '运维架构师', 'K8s, Jenkins, Aliyun, Terraform', '13800138005', 'wukong@example.com', '2026-03-03 06:33:14', '2026-03-03 06:33:14');
-INSERT INTO project_base (project_id, project_name, project_type, project_status, project_desc, project_leader, tech_framework, business_unit, business_type, belong_system, remarks, update_time) VALUES (37, '电商后台管理系统', 'web应用', '开发中', '负责公司核心电商业务的后台数据管理、订单处理及报表分析。', '张伟, 李娜', 'React + FastAPI', '集团总部', '运营', '中台系统', '预计 Q2 完成一期迭代', '2026-03-03 06:33:14');
-INSERT INTO project_base (project_id, project_name, project_type, project_status, project_desc, project_leader, tech_framework, business_unit, business_type, belong_system, remarks, update_time) VALUES (38, '移动端客户小程序', '小程序', '已上线', '面向 C 端客户的在线下单小程序。', '王强', '微信小程序原生 + Node.js', '投管', '新需求', '营销系统', NULL, '2026-03-03 06:33:14');
-INSERT INTO project_base (project_id, project_name, project_type, project_status, project_desc, project_leader, tech_framework, business_unit, business_type, belong_system, remarks, update_time) VALUES (39, '内部 OA 系统', 'web应用', '已下线', '支持请假、审批、考勤等内部行政流程。', '李娜', 'Vue + Spring Boot', '人力资源', '运维', '办公系统', '历史遗留系统，保持基本运行即可', '2026-03-03 06:33:14');
-INSERT INTO project_base (project_id, project_name, project_type, project_status, project_desc, project_leader, tech_framework, business_unit, business_type, belong_system, remarks, update_time) VALUES (40, '物流追踪平台', '钉钉微应用', '开发中', '对接第三方物流 API，实时更新订单物流轨迹。', '赵敏, 孙悟空', 'Flutter + Golang', '投融资', 'B端业务', '物流系统', NULL, '2026-03-03 06:33:14');
-INSERT INTO project_base (project_id, project_name, project_type, project_status, project_desc, project_leader, tech_framework, business_unit, business_type, belong_system, remarks, update_time) VALUES (41, '财务报表生成器', '低代码', '待启动', '自动化生成月度财务分析报告及其图表。', '不明', NULL, '财务', '报表分析', '财务系统', NULL, '2026-03-03 06:33:14');
-INSERT INTO project_resource (resource_id, project_id, resource_type, git_repo, deploy_branch, deploy_method, deploy_addr, deploy_steps, prod_domain, uat_domain, developer, tech_framework, resource_remarks, special_note, update_time) VALUES (42, 37, '前端', 'https://github.com/example/mall-admin-web', 'develop', 'Docker', '192.168.1.10', '1. npm install
-2. npm run build
-3. docker-compose up', 'admin.mall.com', 'uat-admin.mall.com', '张伟', 'React 18 + TypeScript + Ant Design', 'Node版本建议16.x', NULL, '2026-03-03 06:33:14');
-INSERT INTO project_resource (resource_id, project_id, resource_type, git_repo, deploy_branch, deploy_method, deploy_addr, deploy_steps, prod_domain, uat_domain, developer, tech_framework, resource_remarks, special_note, update_time) VALUES (43, 37, '后端', 'https://github.com/example/mall-admin-api', 'main', 'K8s', 'k8s-cluster-01', NULL, 'api-admin.mall.com', 'uat-api-admin.mall.com', '李娜', 'FastAPI + Python 3.10 + PostgreSQL', NULL, NULL, '2026-03-03 06:33:14');
-INSERT INTO project_resource (resource_id, project_id, resource_type, git_repo, deploy_branch, deploy_method, deploy_addr, deploy_steps, prod_domain, uat_domain, developer, tech_framework, resource_remarks, special_note, update_time) VALUES (44, 38, '前端', 'https://github.com/example/customer-mini-app-client', 'production', '云托管', NULL, NULL, 'customer.example.com', NULL, '王强', '微信小程序原生', NULL, NULL, '2026-03-03 06:33:14');
-INSERT INTO project_resource (resource_id, project_id, resource_type, git_repo, deploy_branch, deploy_method, deploy_addr, deploy_steps, prod_domain, uat_domain, developer, tech_framework, resource_remarks, special_note, update_time) VALUES (45, 38, '后端', 'https://github.com/example/customer-mini-app-server', 'production', '云托管', NULL, NULL, 'api.customer.example.com', NULL, '王强', 'Node.js + Express', NULL, NULL, '2026-03-03 06:33:14');
-INSERT INTO project_resource (resource_id, project_id, resource_type, git_repo, deploy_branch, deploy_method, deploy_addr, deploy_steps, prod_domain, uat_domain, developer, tech_framework, resource_remarks, special_note, update_time) VALUES (46, 39, '前端', NULL, NULL, 'Jenkins', '10.0.0.5', NULL, NULL, NULL, '李娜', 'Vue 2', NULL, NULL, '2026-03-03 06:33:14');
-INSERT INTO project_resource (resource_id, project_id, resource_type, git_repo, deploy_branch, deploy_method, deploy_addr, deploy_steps, prod_domain, uat_domain, developer, tech_framework, resource_remarks, special_note, update_time) VALUES (47, 39, '后端', NULL, NULL, 'Jenkins', '10.0.0.5', NULL, NULL, NULL, '李娜', 'Spring Boot + MySQL', NULL, NULL, '2026-03-03 06:33:14');
-INSERT INTO project_external_resource (external_id, project_id, aliyun_oss, database_config, redis_config, middleware_config, other_config, create_time, update_time) VALUES (15, 37, 'OSS: mall-assets-bucket', 'RDS: rm-2ze6xxxx.mysql.rds.aliyuncs.com', 'Host: r-2ze6xxxx.redis.rds.aliyuncs.com
-Port: 6379', 'RocketMQ: Topic-Order-Pay, Topic-Inventory-Update', NULL, '2026-03-03 06:33:14', '2026-03-03 06:33:14');
-INSERT INTO project_external_resource (external_id, project_id, aliyun_oss, database_config, redis_config, middleware_config, other_config, create_time, update_time) VALUES (16, 40, 'OSS: proman-logs-bucket
-Region: cn-shanghai', NULL, 'Host: r-uf6xxxx.redis.rds.aliyuncs.com
-Port: 6379', 'RocketMQ: Topic-Logistics-Update', NULL, '2026-03-03 06:33:14', '2026-03-03 06:33:14');
-SET FOREIGN_KEY_CHECKS=1;
+-- Deprecated.
+-- External resource storage has been normalized into structured tables.
+-- Please use the Python scripts below instead of importing SQL directly:
+--
+--   python init_db.py
+--   python seed_data.py
+--
+-- For a destructive rebuild of schema and demo data:
+--
+--   python reset_db.py --confirm RESET
