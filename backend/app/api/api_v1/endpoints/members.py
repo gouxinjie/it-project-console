@@ -1,10 +1,11 @@
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.api import deps
 from app.models import member as member_model
+from app.models import project as project_model
 from app.schemas import member as member_schema
 
 router = APIRouter(dependencies=[Depends(deps.get_current_active_user)])
@@ -30,6 +31,36 @@ def read_members(
         .all()
     )
     return member_schema.MemberPage(items=members, total=total, skip=skip, limit=limit)
+
+
+@router.get("/{member_id}", response_model=member_schema.MemberDetail)
+def read_member(
+    member_id: int,
+    db: Session = Depends(deps.get_db),
+) -> Any:
+    member = (
+        db.query(member_model.ProjectMember)
+        .options(
+            selectinload(member_model.ProjectMember.lead_projects),
+            selectinload(member_model.ProjectMember.developed_resources).selectinload(
+                project_model.ProjectResource.project
+            ),
+        )
+        .filter(member_model.ProjectMember.member_id == member_id)
+        .first()
+    )
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+
+    member.lead_projects.sort(
+        key=lambda project: (project.update_time, project.project_id),
+        reverse=True,
+    )
+    member.developed_resources.sort(
+        key=lambda resource: (resource.update_time, resource.resource_id),
+        reverse=True,
+    )
+    return member
 
 
 @router.post("/", response_model=member_schema.Member)

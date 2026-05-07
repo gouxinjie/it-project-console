@@ -9,6 +9,7 @@ import "@/index.css";
 const Login = lazy(() => import("@/pages/Login"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const ProjectList = lazy(() => import("@/pages/ProjectList"));
+const ProjectDetail = lazy(() => import("@/pages/ProjectDetail"));
 const ProjectForm = lazy(() => import("@/pages/ProjectForm"));
 const ProjectResourceForm = lazy(() => import("@/pages/ProjectResourceForm"));
 const ProjectExternalResourceForm = lazy(
@@ -86,6 +87,7 @@ const PrivateApp: React.FC = () => (
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<ProjectList />} />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
         <Route path="/projects/create" element={<ProjectForm />} />
         <Route path="/projects/:id/edit" element={<ProjectForm />} />
         <Route

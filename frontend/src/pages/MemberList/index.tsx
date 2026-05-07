@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Card,
+  Col,
   Descriptions,
   Form,
   Input,
   Modal,
+  Row,
   Space,
+  Spin,
+  Statistic,
   Table,
+  Tag,
+  Typography,
   message,
   type TableColumnsType,
 } from "antd";
@@ -16,16 +22,27 @@ import {
   PlusOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
+import { PROJECT_STATUS_COLORS } from "@/constants/project";
 import {
   createMember,
   deleteMember,
+  getMemberDetail,
   getMembers,
   updateMember,
 } from "@/services/member";
-import type { Member, MemberPayload } from "@/types/member";
+import type {
+  Member,
+  MemberDetail,
+  MemberDevelopedResourceSummary,
+  MemberLeadProjectSummary,
+  MemberPayload,
+} from "@/types/member";
 
 const { confirm } = Modal;
+const { Text, Title } = Typography;
 const { TextArea } = Input;
 
 interface TablePaginationState {
@@ -34,10 +51,19 @@ interface TablePaginationState {
   total: number;
 }
 
+const EMPTY_COUNTS = {
+  leadProjects: 0,
+  developedResources: 0,
+};
+
 const MemberList: React.FC = () => {
+  const navigate = useNavigate();
+  const detailRequestIdRef = useRef(0);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [memberDetail, setMemberDetail] = useState<MemberDetail | null>(null);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState<Member[]>([]);
@@ -52,6 +78,16 @@ const MemberList: React.FC = () => {
   useEffect(() => {
     void fetchMemberList({ current: 1, pageSize: 10, total: 0 }, "");
   }, []);
+
+  const detailCounts = useMemo(() => {
+    if (!memberDetail) {
+      return EMPTY_COUNTS;
+    }
+    return {
+      leadProjects: memberDetail.lead_projects.length,
+      developedResources: memberDetail.developed_resources.length,
+    };
+  }, [memberDetail]);
 
   const fetchMemberList = async (
     nextPagination: TablePaginationState = pagination,
@@ -77,6 +113,40 @@ const MemberList: React.FC = () => {
     }
   };
 
+  const closeDetailModal = () => {
+    detailRequestIdRef.current += 1;
+    setIsDetailOpen(false);
+    setMemberDetail(null);
+    setSelectedMember(null);
+    setDetailLoading(false);
+  };
+
+  const openDetailModal = async (member: Member) => {
+    const requestId = detailRequestIdRef.current + 1;
+    detailRequestIdRef.current = requestId;
+
+    setSelectedMember(member);
+    setMemberDetail(null);
+    setIsDetailOpen(true);
+    setDetailLoading(true);
+
+    try {
+      const response = await getMemberDetail(member.member_id);
+      if (detailRequestIdRef.current !== requestId) {
+        return;
+      }
+      setMemberDetail(response);
+    } catch (error) {
+      if (detailRequestIdRef.current === requestId) {
+        message.error("获取成员关联信息失败");
+      }
+    } finally {
+      if (detailRequestIdRef.current === requestId) {
+        setDetailLoading(false);
+      }
+    }
+  };
+
   const handleDelete = (member: Member) => {
     confirm({
       title: "确认删除成员",
@@ -89,6 +159,9 @@ const MemberList: React.FC = () => {
         try {
           await deleteMember(member.member_id);
           message.success("成员已删除");
+          if (selectedMember?.member_id === member.member_id) {
+            closeDetailModal();
+          }
           void fetchMemberList(pagination, searchText);
         } catch (error) {
           message.error("删除成员失败");
@@ -119,6 +192,9 @@ const MemberList: React.FC = () => {
       if (editingMember) {
         await updateMember(editingMember.member_id, values);
         message.success("成员已更新");
+        if (selectedMember?.member_id === editingMember.member_id) {
+          void openDetailModal({ ...selectedMember, ...values });
+        }
       } else {
         await createMember(values);
         message.success("成员已创建");
@@ -126,6 +202,10 @@ const MemberList: React.FC = () => {
       setIsEditOpen(false);
       void fetchMemberList(pagination, searchText);
     } catch (error) {
+      const validationError = error as { errorFields?: unknown[] };
+      if (validationError.errorFields) {
+        return;
+      }
       message.error("保存成员失败");
     }
   };
@@ -136,13 +216,7 @@ const MemberList: React.FC = () => {
       dataIndex: "member_name",
       key: "member_name",
       render: (text: string, record: Member) => (
-        <Button
-          type="link"
-          onClick={() => {
-            setSelectedMember(record);
-            setIsDetailOpen(true);
-          }}
-        >
+        <Button type="link" onClick={() => void openDetailModal(record)}>
           {text}
         </Button>
       ),
@@ -184,6 +258,82 @@ const MemberList: React.FC = () => {
           </Button>
         </Space>
       ),
+    },
+  ];
+
+  const leadProjectColumns: TableColumnsType<MemberLeadProjectSummary> = [
+    {
+      title: "项目名称",
+      dataIndex: "project_name",
+      render: (text: string, record) => (
+        <Button type="link" onClick={() => navigate(`/projects/${record.project_id}`)}>
+          {text}
+        </Button>
+      ),
+    },
+    {
+      title: "状态",
+      dataIndex: "project_status",
+      render: (value: string) => (
+        <Tag color={PROJECT_STATUS_COLORS[value] || "blue"}>{value}</Tag>
+      ),
+    },
+    {
+      title: "类型",
+      dataIndex: "project_type",
+    },
+    {
+      title: "业务方",
+      dataIndex: "business_unit",
+    },
+    {
+      title: "更新时间",
+      dataIndex: "update_time",
+      render: (value: string) => dayjs(value).format("YYYY-MM-DD HH:mm"),
+    },
+  ];
+
+  const developedResourceColumns: TableColumnsType<MemberDevelopedResourceSummary> = [
+    {
+      title: "项目",
+      key: "project_name",
+      render: (_, record) => {
+        const project = record.project;
+        return project ? (
+          <Button type="link" onClick={() => navigate(`/projects/${project.project_id}`)}>
+            {project.project_name}
+          </Button>
+        ) : (
+          "-"
+        );
+      },
+    },
+    {
+      title: "资源类型",
+      dataIndex: "resource_type",
+      render: (value: string) => (
+        <Tag color={value === "前端" ? "blue" : "green"}>{value}</Tag>
+      ),
+    },
+    {
+      title: "技术栈",
+      dataIndex: "tech_framework",
+      render: (value: string | null) => value || "-",
+    },
+    {
+      title: "分支",
+      dataIndex: "deploy_branch",
+      render: (value: string | null) => value || "-",
+    },
+    {
+      title: "生产域名",
+      dataIndex: "prod_domain",
+      render: (value: string | null) => value || "-",
+    },
+    {
+      title: "更新时间",
+      dataIndex: "update_time",
+      render: (value: string) => dayjs(value).format("YYYY-MM-DD HH:mm"),
     },
   ];
 
@@ -242,33 +392,77 @@ const MemberList: React.FC = () => {
       </Card>
 
       <Modal
-        title="成员详情"
+        title={selectedMember ? `${selectedMember.member_name} 关联视图` : "成员详情"}
         open={isDetailOpen}
-        onCancel={() => setIsDetailOpen(false)}
+        onCancel={closeDetailModal}
         footer={null}
-        width={700}
+        width={1100}
       >
-        {selectedMember && (
-          <Descriptions bordered column={1}>
-            <Descriptions.Item label="姓名">
-              {selectedMember.member_name}
-            </Descriptions.Item>
-            <Descriptions.Item label="岗位">
-              {selectedMember.position}
-            </Descriptions.Item>
-            <Descriptions.Item label="联系电话">
-              {selectedMember.phone || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="邮箱">
-              {selectedMember.email || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="技术栈">
-              <div className="bg-gray-50 p-2 rounded">
-                {selectedMember.tech_stack || "-"}
-              </div>
-            </Descriptions.Item>
-          </Descriptions>
-        )}
+        <Spin spinning={detailLoading}>
+          {selectedMember ? (
+            <Space direction="vertical" size={16} style={{ width: "100%" }}>
+              <Row gutter={[16, 16]}>
+                <Col span={12}>
+                  <Card bordered={false}>
+                    <Statistic title="负责项目数" value={detailCounts.leadProjects} />
+                  </Card>
+                </Col>
+                <Col span={12}>
+                  <Card bordered={false}>
+                    <Statistic title="参与资源数" value={detailCounts.developedResources} />
+                  </Card>
+                </Col>
+              </Row>
+
+              <Card bordered={false}>
+                <Title level={5}>成员信息</Title>
+                <Descriptions bordered column={2}>
+                  <Descriptions.Item label="姓名">
+                    {memberDetail?.member_name || selectedMember.member_name}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="岗位">
+                    {memberDetail?.position || selectedMember.position}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="联系电话">
+                    {memberDetail?.phone || selectedMember.phone || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="邮箱">
+                    {memberDetail?.email || selectedMember.email || "-"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="技术栈" span={2}>
+                    <Text style={{ whiteSpace: "pre-wrap" }}>
+                      {memberDetail?.tech_stack || selectedMember.tech_stack || "-"}
+                    </Text>
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
+
+              <Card bordered={false}>
+                <Title level={5}>负责项目</Title>
+                <Table<MemberLeadProjectSummary>
+                  rowKey="project_id"
+                  size="small"
+                  pagination={false}
+                  dataSource={memberDetail?.lead_projects ?? []}
+                  columns={leadProjectColumns}
+                  locale={{ emptyText: "暂无负责项目" }}
+                />
+              </Card>
+
+              <Card bordered={false}>
+                <Title level={5}>参与资源</Title>
+                <Table<MemberDevelopedResourceSummary>
+                  rowKey="resource_id"
+                  size="small"
+                  pagination={false}
+                  dataSource={memberDetail?.developed_resources ?? []}
+                  columns={developedResourceColumns}
+                  locale={{ emptyText: "暂无参与资源" }}
+                />
+              </Card>
+            </Space>
+          ) : null}
+        </Spin>
       </Modal>
 
       <Modal

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Avatar, Breadcrumb, Button, Dropdown, Layout, Menu, Space, theme } from "antd";
 import {
   DashboardOutlined,
@@ -16,6 +16,24 @@ import { prefetchProjects } from "@/services/project";
 import styles from "./index.module.scss";
 
 const { Header, Sider, Content } = Layout;
+
+const menuItems = [
+  {
+    key: "/dashboard",
+    icon: <DashboardOutlined />,
+    label: "仪表盘",
+  },
+  {
+    key: "/projects",
+    icon: <ProjectOutlined />,
+    label: "项目列表",
+  },
+  {
+    key: "/members",
+    icon: <UserOutlined />,
+    label: "项目成员",
+  },
+];
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -43,23 +61,15 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const currentUsername = localStorage.getItem("username") || "管理员";
 
-  const menuItems = [
-    {
-      key: "/dashboard",
-      icon: <DashboardOutlined />,
-      label: "仪表盘",
-    },
-    {
-      key: "/projects",
-      icon: <ProjectOutlined />,
-      label: "项目列表",
-    },
-    {
-      key: "/members",
-      icon: <UserOutlined />,
-      label: "项目成员",
-    },
-  ];
+  const currentMenuKey = useMemo(
+    () => menuItems.find((item) => location.pathname.startsWith(item.key))?.key,
+    [location.pathname],
+  );
+
+  const currentPageTitle = useMemo(
+    () => menuItems.find((item) => item.key === currentMenuKey)?.label || "当前页面",
+    [currentMenuKey],
+  );
 
   const userMenuItems = [
     {
@@ -72,10 +82,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const breadcrumbItems = [
     { title: "首页" },
-    {
-      title:
-        menuItems.find((item) => item.key === location.pathname)?.label || "当前页面",
-    },
+    { title: currentPageTitle },
   ];
 
   return (
@@ -90,7 +97,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => setCollapsed((value) => !value)}
             style={{ fontSize: 16, width: 64, height: 64 }}
           />
 
@@ -119,7 +126,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         >
           <Menu
             mode="inline"
-            selectedKeys={[location.pathname]}
+            selectedKeys={currentMenuKey ? [currentMenuKey] : []}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
             style={{ borderRight: 0, padding: "16px 0" }}

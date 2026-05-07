@@ -17,6 +17,7 @@ import {
   invalidateCacheByPrefix,
   prefetchWithCache,
 } from "@/utils/cache";
+import { invalidateMemberDetailCache } from "@/services/member";
 import request from "@/utils/request";
 
 const PROJECT_LIST_CACHE_PREFIX = "projects:list";
@@ -40,6 +41,7 @@ function requestProjectResources(projectId: number): Promise<ProjectResourcesPay
 
 function invalidateProjectCaches(projectId?: number): void {
   invalidateCacheByPrefix(PROJECT_LIST_CACHE_PREFIX);
+  invalidateMemberDetailCache();
   if (projectId !== undefined) {
     invalidateCacheByPrefix(
       createCacheKey(PROJECT_DETAIL_CACHE_PREFIX, { projectId }),

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Card, Col, Row, Space, Spin, Statistic, Table, Tag, Typography } from "antd";
+import { Button, Card, Col, Row, Space, Spin, Statistic, Table, Tag, Typography } from "antd";
 import {
   AppstoreOutlined,
   CheckCircleOutlined,
@@ -16,6 +16,7 @@ import { LegendComponent, TooltipComponent } from "echarts/components";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 import { PROJECT_STATUS_OPTIONS } from "@/constants/project";
 import { getProjects } from "@/services/project";
@@ -26,16 +27,17 @@ echarts.use([PieChart, TooltipComponent, LegendComponent, CanvasRenderer]);
 
 const { Title, Text } = Typography;
 
-const formatMemberNames = (
+function formatMemberNames(
   members: Array<{ member_name: string }> | undefined,
-): string => {
+): string {
   if (!members || members.length === 0) {
     return "-";
   }
   return members.map((member) => member.member_name).join("、");
-};
+}
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
 
@@ -130,7 +132,9 @@ const Dashboard: React.FC = () => {
     <Spin spinning={loading}>
       <div className={styles.dashboardHeader}>
         <Title level={4}>工作台概览</Title>
-        <Text type="secondary">实时掌握研发项目进展、状态分布与最近活跃情况</Text>
+        <Text type="secondary">
+          实时查看项目状态分布、类型结构和最近活跃的项目。
+        </Text>
       </div>
 
       <Row gutter={[16, 16]}>
@@ -156,7 +160,7 @@ const Dashboard: React.FC = () => {
           >
             <Statistic
               title="待启动"
-              value={stats.byStatus["待启动"] || 0}
+              value={stats.byStatus[PROJECT_STATUS_OPTIONS[0]] || 0}
               valueStyle={{ color: "#7a45d1" }}
               prefix={<ClockCircleOutlined />}
             />
@@ -171,7 +175,7 @@ const Dashboard: React.FC = () => {
           >
             <Statistic
               title="已上线"
-              value={stats.byStatus["已上线"] || 0}
+              value={stats.byStatus[PROJECT_STATUS_OPTIONS[2]] || 0}
               valueStyle={{ color: "#389e0d" }}
               prefix={<CheckCircleOutlined />}
             />
@@ -186,9 +190,9 @@ const Dashboard: React.FC = () => {
           >
             <Statistic
               title="开发中"
-              value={stats.byStatus["开发中"] || 0}
+              value={stats.byStatus[PROJECT_STATUS_OPTIONS[1]] || 0}
               valueStyle={{ color: "#d48806" }}
-              prefix={<SyncOutlined spin={(stats.byStatus["开发中"] || 0) > 0} />}
+              prefix={<SyncOutlined spin={(stats.byStatus[PROJECT_STATUS_OPTIONS[1]] || 0) > 0} />}
             />
             <AppstoreOutlined className={styles.cardIcon} />
           </Card>
@@ -201,7 +205,7 @@ const Dashboard: React.FC = () => {
           >
             <Statistic
               title="已下线"
-              value={stats.byStatus["已下线"] || 0}
+              value={stats.byStatus[PROJECT_STATUS_OPTIONS[3]] || 0}
               valueStyle={{ color: "#531dab" }}
               prefix={<ToolOutlined />}
             />
@@ -228,7 +232,11 @@ const Dashboard: React.FC = () => {
                 {
                   title: "项目名称",
                   dataIndex: "project_name",
-                  render: (text: string) => <Text strong>{text}</Text>,
+                  render: (_: string, record) => (
+                    <Button type="link" onClick={() => navigate(`/projects/${record.project_id}`)}>
+                      {record.project_name}
+                    </Button>
+                  ),
                 },
                 {
                   title: "业务方",

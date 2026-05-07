@@ -40,6 +40,45 @@ class Member(MemberBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MemberLeadProjectSummary(BaseModel):
+    project_id: int
+    project_name: str
+    project_type: str
+    project_status: str
+    business_unit: str
+    update_time: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MemberResourceProjectSummary(BaseModel):
+    project_id: int
+    project_name: str
+    project_type: str
+    project_status: str
+    business_unit: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MemberDevelopedResourceSummary(BaseModel):
+    resource_id: int
+    resource_type: str
+    git_repo: Optional[str] = None
+    tech_framework: Optional[str] = None
+    deploy_branch: Optional[str] = None
+    prod_domain: Optional[str] = None
+    update_time: datetime
+    project: Optional[MemberResourceProjectSummary] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MemberDetail(Member):
+    lead_projects: list[MemberLeadProjectSummary] = Field(default_factory=list)
+    developed_resources: list[MemberDevelopedResourceSummary] = Field(default_factory=list)
+
+
 class MemberPage(BaseModel):
     items: list[Member] = Field(default_factory=list)
     total: int

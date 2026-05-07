@@ -19,6 +19,7 @@ import {
 } from "antd";
 import {
   CloudOutlined,
+  EyeOutlined,
   ExclamationCircleOutlined,
   GithubOutlined,
   GlobalOutlined,
@@ -326,6 +327,11 @@ const ProjectList: React.FC = () => {
       width: 200,
       ellipsis: true,
       fixed: "left",
+      render: (text: string, record) => (
+        <Button type="link" onClick={() => navigate(`/projects/${record.project_id}`)}>
+          {text}
+        </Button>
+      ),
     },
     {
       title: "项目类型",
@@ -402,7 +408,7 @@ const ProjectList: React.FC = () => {
     {
       title: "操作",
       key: "action",
-      width: 320,
+      width: 380,
       fixed: "right",
       render: (_, record) => {
         const resources = record.resources || [];
@@ -416,6 +422,14 @@ const ProjectList: React.FC = () => {
 
         return (
           <Space size="small">
+            <Button
+              type="link"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => navigate(`/projects/${record.project_id}`)}
+            >
+              详情
+            </Button>
             <Button
               type="link"
               size="small"
@@ -440,7 +454,6 @@ const ProjectList: React.FC = () => {
             <Button
               type="link"
               size="small"
-              disabled={record.has_external_resources}
               onClick={() =>
                 navigate(`/projects/${record.project_id}/external-resource/edit`)
               }
