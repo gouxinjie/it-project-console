@@ -12,6 +12,7 @@ const MEMBERS_CACHE_PREFIX = "members";
 const MEMBER_DETAIL_CACHE_PREFIX = "members:detail";
 const MEMBERS_CACHE_TTL_MS = 60_000;
 const MEMBER_DETAIL_CACHE_TTL_MS = 30_000;
+const MEMBER_LIST_PAGE_LIMIT = 200;
 
 function requestMembers(params?: MemberQueryParams): Promise<MemberPage> {
   return request.get<MemberPage>("/members/", { params });
@@ -36,6 +37,41 @@ export function prefetchMembers(params?: MemberQueryParams): void {
     cacheKey,
     () => requestMembers(params),
     MEMBERS_CACHE_TTL_MS,
+  );
+}
+
+export async function getAllMembers(
+  params?: Omit<MemberQueryParams, "skip" | "limit">,
+): Promise<Member[]> {
+  const firstPage = await getMembers({
+    ...params,
+    skip: 0,
+    limit: MEMBER_LIST_PAGE_LIMIT,
+  });
+
+  if (firstPage.total <= firstPage.items.length) {
+    return firstPage.items;
+  }
+
+  const pageRequests: Array<Promise<MemberPage>> = [];
+  for (
+    let skip = firstPage.items.length;
+    skip < firstPage.total;
+    skip += MEMBER_LIST_PAGE_LIMIT
+  ) {
+    pageRequests.push(
+      getMembers({
+        ...params,
+        skip,
+        limit: MEMBER_LIST_PAGE_LIMIT,
+      }),
+    );
+  }
+
+  const remainingPages = await Promise.all(pageRequests);
+  return [...firstPage.items, ...remainingPages.flatMap((page) => page.items)].slice(
+    0,
+    firstPage.total,
   );
 }
 

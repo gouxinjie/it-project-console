@@ -31,14 +31,15 @@ import {
 import { useNavigate } from "react-router-dom";
 import dayjs, { type Dayjs } from "dayjs";
 
+import styles from "./index.module.scss";
+
 import {
   BUSINESS_TYPE_OPTIONS,
   BUSINESS_UNIT_OPTIONS,
-  PROJECT_STATUS_COLORS,
   PROJECT_STATUS_OPTIONS,
   PROJECT_TYPE_OPTIONS,
 } from "@/constants/project";
-import { getMembers } from "@/services/member";
+import { getAllMembers } from "@/services/member";
 import {
   deleteProject,
   deleteProjectExternalResources,
@@ -95,6 +96,13 @@ const formatMemberNames = (
   return members.map((member) => member.member_name).join("、");
 };
 
+const PROJECT_STATUS_DISPLAY_CONFIG: Record<string, string> = {
+  [PROJECT_STATUS_OPTIONS[0]]: "#8b5cf6",
+  [PROJECT_STATUS_OPTIONS[1]]: "#f59e0b",
+  [PROJECT_STATUS_OPTIONS[2]]: "#10b981",
+  [PROJECT_STATUS_OPTIONS[3]]: "#64748b",
+};
+
 const ProjectList: React.FC = () => {
   const navigate = useNavigate();
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
@@ -115,10 +123,11 @@ const ProjectList: React.FC = () => {
 
   const fetchMembers = async () => {
     try {
-      const response = await getMembers({ skip: 0, limit: 1000 });
-      setMembers(response.items);
+      const items = await getAllMembers();
+      setMembers(items);
     } catch (error) {
       console.error("Failed to fetch members:", error);
+      message.error("获取成员列表失败");
     }
   };
 
@@ -328,7 +337,11 @@ const ProjectList: React.FC = () => {
       ellipsis: true,
       fixed: "left",
       render: (text: string, record) => (
-        <Button type="link" onClick={() => navigate(`/projects/${record.project_id}`)}>
+        <Button 
+          type="link" 
+          onClick={() => navigate(`/projects/${record.project_id}`)}
+          style={{ padding: 0, fontWeight: 700, color: "#1e293b" }}
+        >
           {text}
         </Button>
       ),
@@ -338,15 +351,29 @@ const ProjectList: React.FC = () => {
       dataIndex: "project_type",
       key: "project_type",
       width: 120,
+      render: (text: string) => (
+        <Tag color="default" style={{ borderRadius: 6, fontWeight: 500, border: "1px solid #e2e8f0" }}>
+          {text}
+        </Tag>
+      ),
     },
     {
       title: "项目状态",
       dataIndex: "project_status",
       key: "project_status",
       width: 120,
-      render: (status: string) => (
-        <Tag color={PROJECT_STATUS_COLORS[status] || "blue"}>{status}</Tag>
-      ),
+      render: (status: string) => {
+        const color = PROJECT_STATUS_DISPLAY_CONFIG[status] || "#64748b";
+        return (
+          <Space size={4}>
+            <span
+              className={styles.statusIndicator}
+              style={{ color, backgroundColor: color }}
+            />
+            <span style={{ fontSize: 13, color: "#475569", fontWeight: 500 }}>{status}</span>
+          </Space>
+        );
+      },
     },
     {
       title: "项目描述",
@@ -427,6 +454,7 @@ const ProjectList: React.FC = () => {
               size="small"
               icon={<EyeOutlined />}
               onClick={() => navigate(`/projects/${record.project_id}`)}
+              style={{ color: "#3b82f6" }}
             >
               详情
             </Button>
@@ -448,15 +476,18 @@ const ProjectList: React.FC = () => {
                   }`,
                 );
               }}
+              style={{ color: isFull ? undefined : "#10b981" }}
             >
               添加资源
             </Button>
             <Button
               type="link"
               size="small"
+              icon={<PartitionOutlined />}
               onClick={() =>
                 navigate(`/projects/${record.project_id}/external-resource/edit`)
               }
+              style={{ color: "#f59e0b" }}
             >
               添加外部资源
             </Button>
@@ -464,6 +495,7 @@ const ProjectList: React.FC = () => {
               type="link"
               size="small"
               onClick={() => navigate(`/projects/${record.project_id}/edit`)}
+              style={{ color: "#6366f1" }}
             >
               编辑
             </Button>
@@ -484,7 +516,7 @@ const ProjectList: React.FC = () => {
   const expandedRowRender = (record: ProjectTableRecord) => {
     if (record.resourceLoading) {
       return (
-        <div style={{ padding: 24, textAlign: "center", background: "#f8faff" }}>
+        <div className={styles.expandedContainer} style={{ textAlign: "center" }}>
           <Spin tip="加载资源中..." />
         </div>
       );
@@ -521,22 +553,15 @@ const ProjectList: React.FC = () => {
 
     if (cards.length === 0) {
       return (
-        <div
-          style={{
-            padding: 24,
-            textAlign: "center",
-            background: "#f8faff",
-            color: "#86909c",
-          }}
-        >
+        <div className={styles.expandedContainer} style={{ textAlign: "center", color: "#94a3b8" }}>
           暂无资源信息
         </div>
       );
     }
 
     return (
-      <div style={{ background: "#f8faff" }}>
-        <Row gutter={[16, 16]}>
+      <div className={styles.expandedContainer}>
+        <Row gutter={[20, 20]}>
           {cards.map((card) => {
             if (card.kind === "external") {
               const resource = card.resource;
@@ -544,31 +569,35 @@ const ProjectList: React.FC = () => {
                 <Col span={8} key={`external-${record.project_id}`}>
                   <Card
                     size="small"
-                    bordered={false}
+                    className={`${styles.resourceCard} ${styles.resourceCardExternal}`}
                     title={
                       <Space>
-                        <Tag color="orange">外部资源</Tag>
+                        <Tag color="orange" style={{ borderRadius: 4 }}>外部资源</Tag>
                         <Text strong>统一配置概览</Text>
                       </Space>
                     }
                     actions={[
                       <Button
-                        type="link"
+                        type="text"
                         size="small"
                         key="edit"
+                        icon={<PlusOutlined />}
+                        className={styles.actionButton}
                         onClick={() =>
                           navigate(
                             `/projects/${record.project_id}/external-resource/edit`,
                           )
                         }
+                        style={{ color: "#10b981" }}
                       >
                         编辑
                       </Button>,
                       <Button
-                        type="link"
+                        type="text"
                         size="small"
                         danger
                         key="delete"
+                        className={styles.actionButton}
                         onClick={() =>
                           handleDeleteExternalResources(record.project_id)
                         }
@@ -576,12 +605,10 @@ const ProjectList: React.FC = () => {
                         删除
                       </Button>,
                     ]}
-                    styles={{ body: { padding: 12 } }}
                   >
                     <Descriptions
                       column={1}
                       size="small"
-                      labelStyle={{ color: "#86909c" }}
                     >
                       <Descriptions.Item
                         label={
@@ -590,7 +617,7 @@ const ProjectList: React.FC = () => {
                           </span>
                         }
                       >
-                        <div style={{ fontSize: 12, color: "#4e5969" }}>
+                        <div style={{ color: "#475569" }}>
                           {resource.aliyun_oss && (
                             <div style={{ marginBottom: 4 }}>阿里云 OSS 已配置</div>
                           )}
@@ -613,39 +640,44 @@ const ProjectList: React.FC = () => {
             }
 
             const resource = card.resource;
+            const typeClass = resource.resource_type === "前端" ? styles.resourceCardFrontend : styles.resourceCardBackend;
             return (
               <Col span={8} key={`resource-${resource.resource_id}`}>
                 <Card
                   size="small"
-                  bordered={false}
+                  className={`${styles.resourceCard} ${typeClass}`}
                   title={
                     <Space>
                       <Tag
                         color={resource.resource_type === "前端" ? "blue" : "green"}
+                        style={{ borderRadius: 4 }}
                       >
                         {resource.resource_type}
                       </Tag>
-                      <Text strong>{resource.tech_framework || "未填写技术栈"}</Text>
+                      <Text strong style={{ color: "#1e293b" }}>{resource.tech_framework || "未填写技术栈"}</Text>
                     </Space>
                   }
                   actions={[
                     <Button
-                      type="link"
+                      type="text"
                       size="small"
                       key="edit"
+                      className={styles.actionButton}
                       onClick={() =>
                         navigate(
                           `/projects/${record.project_id}/resource/${resource.resource_id}/edit`,
                         )
                       }
+                      style={{ color: "#10b981" }}
                     >
                       编辑
                     </Button>,
                     <Button
-                      type="link"
+                      type="text"
                       size="small"
                       danger
                       key="delete"
+                      className={styles.actionButton}
                       onClick={() =>
                         handleDeleteResource(
                           record.project_id,
@@ -657,12 +689,10 @@ const ProjectList: React.FC = () => {
                       删除
                     </Button>,
                   ]}
-                  styles={{ body: { padding: 12 } }}
                 >
                   <Descriptions
                     column={1}
                     size="small"
-                    labelStyle={{ color: "#86909c" }}
                   >
                     <Descriptions.Item
                       label={
@@ -717,172 +747,160 @@ const ProjectList: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <Row gutter={[24, 16]} align="middle" className="mb-6">
+    <div className={styles.projectContainer}>
+      <Card className={styles.searchCard}>
+        <Row gutter={[24, 20]}>
           <Col xs={24} sm={12} md={8} lg={6}>
-            <div className="flex items-center gap-2">
-              <span style={{ whiteSpace: "nowrap" }}>项目类型:</span>
-              <Select
-                placeholder="请选择"
-                style={{ width: "100%" }}
-                allowClear
-                value={filters.project_type}
-                onChange={(value) =>
-                  setFilters((previous) => ({ ...previous, project_type: value }))
-                }
-              >
-                {PROJECT_TYPE_OPTIONS.map((option) => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
+            <span className={styles.filterLabel}>项目类型</span>
+            <Select
+              placeholder="全部类型"
+              style={{ width: "100%" }}
+              allowClear
+              value={filters.project_type}
+              onChange={(value) =>
+                setFilters((previous) => ({ ...previous, project_type: value }))
+              }
+            >
+              {PROJECT_TYPE_OPTIONS.map((option) => (
+                <Select.Option key={option} value={option}>
+                  {option}
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={6}>
-            <div className="flex items-center gap-2">
-              <span style={{ whiteSpace: "nowrap" }}>项目状态:</span>
-              <Select
-                placeholder="请选择"
-                style={{ width: "100%" }}
-                allowClear
-                value={filters.project_status}
-                onChange={(value) =>
-                  setFilters((previous) => ({
-                    ...previous,
-                    project_status: value,
-                  }))
-                }
-              >
-                {PROJECT_STATUS_OPTIONS.map((option) => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
+            <span className={styles.filterLabel}>项目状态</span>
+            <Select
+              placeholder="全部状态"
+              style={{ width: "100%" }}
+              allowClear
+              value={filters.project_status}
+              onChange={(value) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  project_status: value,
+                }))
+              }
+            >
+              {PROJECT_STATUS_OPTIONS.map((option) => (
+                <Select.Option key={option} value={option}>
+                  {option}
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={6}>
-            <div className="flex items-center gap-2">
-              <span style={{ whiteSpace: "nowrap" }}>业务方:</span>
-              <Select
-                placeholder="请选择"
-                style={{ width: "100%" }}
-                allowClear
-                value={filters.business_unit}
-                onChange={(value) =>
-                  setFilters((previous) => ({ ...previous, business_unit: value }))
-                }
-              >
-                {BUSINESS_UNIT_OPTIONS.map((option) => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
+            <span className={styles.filterLabel}>业务方</span>
+            <Select
+              placeholder="全部业务方"
+              style={{ width: "100%" }}
+              allowClear
+              value={filters.business_unit}
+              onChange={(value) =>
+                setFilters((previous) => ({ ...previous, business_unit: value }))
+              }
+            >
+              {BUSINESS_UNIT_OPTIONS.map((option) => (
+                <Select.Option key={option} value={option}>
+                  {option}
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={6}>
-            <div className="flex items-center gap-2">
-              <span style={{ whiteSpace: "nowrap" }}>业务类型:</span>
-              <Select
-                placeholder="请选择"
-                style={{ width: "100%" }}
-                allowClear
-                value={filters.business_type}
-                onChange={(value) =>
-                  setFilters((previous) => ({ ...previous, business_type: value }))
-                }
-              >
-                {BUSINESS_TYPE_OPTIONS.map((option) => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
+            <span className={styles.filterLabel}>业务类型</span>
+            <Select
+              placeholder="全部业务类型"
+              style={{ width: "100%" }}
+              allowClear
+              value={filters.business_type}
+              onChange={(value) =>
+                setFilters((previous) => ({ ...previous, business_type: value }))
+              }
+            >
+              {BUSINESS_TYPE_OPTIONS.map((option) => (
+                <Select.Option key={option} value={option}>
+                  {option}
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={6}>
-            <div className="flex items-center gap-2">
-              <span style={{ whiteSpace: "nowrap" }}>项目负责人:</span>
-              <Select
-                placeholder="请选择"
-                style={{ width: "100%" }}
-                allowClear
-                value={filters.project_leader_id}
-                onChange={(value) =>
-                  setFilters((previous) => ({
-                    ...previous,
-                    project_leader_id: value,
-                  }))
-                }
-                showSearch
-                optionFilterProp="children"
-              >
-                {members.map((member) => (
-                  <Select.Option key={member.member_id} value={member.member_id}>
-                    {member.member_name}
-                  </Select.Option>
-                ))}
-              </Select>
-            </div>
+            <span className={styles.filterLabel}>项目负责人</span>
+            <Select
+              placeholder="全部负责人"
+              style={{ width: "100%" }}
+              allowClear
+              value={filters.project_leader_id}
+              onChange={(value) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  project_leader_id: value,
+                }))
+              }
+              showSearch
+              optionFilterProp="children"
+            >
+              {members.map((member) => (
+                <Select.Option key={member.member_id} value={member.member_id}>
+                  {member.member_name}
+                </Select.Option>
+              ))}
+            </Select>
           </Col>
 
           <Col xs={24} sm={12} md={8} lg={6}>
-            <div className="flex items-center gap-2">
-              <span style={{ whiteSpace: "nowrap" }}>所属系统:</span>
-              <Input
-                placeholder="请输入系统名称"
-                value={filters.belong_system}
-                onChange={(event) =>
-                  setFilters((previous) => ({
-                    ...previous,
-                    belong_system: event.target.value || undefined,
-                  }))
-                }
-              />
-            </div>
+            <span className={styles.filterLabel}>所属系统</span>
+            <Input
+              placeholder="请输入系统名称"
+              value={filters.belong_system}
+              onChange={(event) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  belong_system: event.target.value || undefined,
+                }))
+              }
+            />
           </Col>
 
           <Col xs={24} sm={12} md={12} lg={8}>
-            <div className="flex items-center gap-2">
-              <span style={{ whiteSpace: "nowrap" }}>更新时间:</span>
-              <RangePicker
-                style={{ width: "100%" }}
-                value={filters.timeRange}
-                onChange={(dates) =>
-                  setFilters((previous) => ({
-                    ...previous,
-                    timeRange:
-                      dates && dates[0] && dates[1]
-                        ? [dates[0], dates[1]]
-                        : null,
-                  }))
-                }
-              />
-            </div>
+            <span className={styles.filterLabel}>更新时间</span>
+            <RangePicker
+              style={{ width: "100%" }}
+              value={filters.timeRange}
+              onChange={(dates) =>
+                setFilters((previous) => ({
+                  ...previous,
+                  timeRange:
+                    dates && dates[0] && dates[1]
+                      ? [dates[0], dates[1]]
+                      : null,
+                }))
+              }
+            />
           </Col>
         </Row>
 
-        <div className="flex justify-center border-t pt-4">
+        <div className={styles.searchActionRow}>
           <Space size="middle">
             <Button
               type="primary"
               icon={<SearchOutlined />}
               onClick={handleSearch}
+              style={{ background: "#1e293b", borderColor: "#1e293b", borderRadius: 8 }}
             >
-              查询
+              查询项目
             </Button>
-            <Button onClick={handleReset}>重置</Button>
+            <Button onClick={handleReset} style={{ borderRadius: 8 }}>重置</Button>
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => navigate("/projects/create")}
+              style={{ background: "#10b981", borderColor: "#10b981", borderRadius: 8 }}
             >
               创建项目
             </Button>
@@ -890,8 +908,9 @@ const ProjectList: React.FC = () => {
         </div>
       </Card>
 
-      <Card>
+      <Card className={styles.tableCard}>
         <Table<ProjectTableRecord>
+          className={styles.projectTable}
           columns={columns}
           expandable={{
             expandedRowRender,
@@ -902,13 +921,13 @@ const ProjectList: React.FC = () => {
           dataSource={dataSource}
           loading={loading}
           tableLayout="fixed"
-          scroll={{ x: 1920 }}
+          scroll={{ x: 1600 }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
             total: pagination.total,
             showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条`,
+            showTotal: (total) => `共 ${total} 条项目`,
           }}
           onChange={(pager) => {
             void fetchProjects(filters, {

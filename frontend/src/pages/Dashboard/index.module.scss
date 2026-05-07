@@ -1,61 +1,121 @@
 .dashboardHeader {
-    margin-bottom: 24px;
+    margin-bottom: 32px;
+    padding: 0 4px;
+
+    h4 {
+        margin: 0 0 8px !important;
+        font-size: 24px !important;
+        font-weight: 800 !important;
+        color: #1e293b !important;
+        letter-spacing: -0.02em;
+    }
+
+    :global(.ant-typography-secondary) {
+        color: #64748b;
+        font-size: 14px;
+    }
 }
 
 .statisticCard {
-    transition: all 0.3s;
-    border: none;
-    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #f1f5f9;
+    border-radius: 20px;
     overflow: hidden;
     position: relative;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 
     &:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
     }
 
-    :global(.ant-statistic-title) {
-        font-size: 14px;
-        color: #8c8c8c;
-        margin-bottom: 8px;
-    }
+    :global {
+        .ant-card-body {
+            padding: 24px;
+        }
 
-    :global(.ant-statistic-content) {
-        font-family: 'Dosis', sans-serif;
-        font-weight: 600;
+        .ant-statistic-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .ant-statistic-content {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .ant-statistic-content-prefix {
+            font-size: 20px;
+            margin-right: 12px;
+            opacity: 0.8;
+        }
     }
 }
 
 .cardIcon {
     position: absolute;
-    right: -10px;
-    bottom: -10px;
-    font-size: 64px;
-    opacity: 0.1;
-    transform: rotate(-15deg);
+    right: -8px;
+    bottom: -8px;
+    font-size: 72px;
+    opacity: 0.08;
+    transform: rotate(-10deg);
+    pointer-events: none;
 }
 
 .chartCard {
-    border-radius: 12px;
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    border-radius: 20px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    height: 100%;
 
-    :global(.ant-card-head) {
-        border-bottom: none;
-        padding: 20px 24px 0;
-    }
+    :global {
+        .ant-card-head {
+            border-bottom: 1px solid #f1f5f9;
+            padding: 0 24px;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+        }
 
-    :global(.ant-card-head-title) {
-        font-size: 16px;
-        font-weight: 600;
+        .ant-card-head-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .ant-card-body {
+            padding: 24px;
+        }
     }
 }
 
 .recentTable {
     :global {
-        .ant-table-thead>tr>th {
-            background: #fafafa;
+        .ant-table {
+            background: transparent;
+        }
+
+        .ant-table-thead > tr > th {
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 13px;
             font-weight: 600;
+            border-bottom: 1px solid #f1f5f9;
+            padding: 16px;
+        }
+
+        .ant-table-tbody > tr > td {
+            padding: 16px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .ant-table-tbody > tr:hover > td {
+            background: #f8fafc;
         }
     }
 }
@@ -65,5 +125,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    margin-right: 8px;
+    margin-right: 10px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 1), 0 0 0 4px currentColor;
+    opacity: 0.8;
 }

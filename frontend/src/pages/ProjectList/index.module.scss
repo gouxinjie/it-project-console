@@ -1,0 +1,176 @@
+.projectContainer {
+  padding: 24px;
+  background-color: #f8fafc;
+  min-height: 100%;
+}
+
+.searchCard {
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+
+  :global {
+    .ant-card-body {
+      padding: 24px;
+    }
+    
+    .ant-form-item-label > label {
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 600;
+    }
+  }
+}
+
+.filterLabel {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.tableCard {
+  border-radius: 16px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  :global {
+    .ant-card-body {
+      padding: 0;
+    }
+  }
+}
+
+.projectTable {
+  :global {
+    .ant-table {
+      background: transparent;
+    }
+
+    .ant-table-thead > tr > th {
+      background: #f8fafc;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid #f1f5f9;
+      padding: 16px;
+      
+      &::before {
+        display: none;
+      }
+    }
+
+    .ant-table-tbody > tr > td {
+      padding: 16px;
+      border-bottom: 1px solid #f1f5f9;
+      transition: all 0.2s;
+    }
+
+    .ant-table-tbody > tr.ant-table-row:hover > td {
+      background: #f8fafc;
+    }
+
+    // 展开行样式
+    .ant-table-expanded-row > td {
+      background: #fcfdfe !important;
+      padding: 0 !important;
+    }
+  }
+}
+
+.expandedContainer {
+  padding: 16px 48px;
+  background: linear-gradient(to bottom, #fcfdfe, #f8fafc);
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.resourceCard {
+  height: 100%;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  transition: all 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  &Frontend {
+    border-left: 4px solid #3b82f6;
+    &:hover { border-color: #3b82f6; }
+  }
+
+  &Backend {
+    border-left: 4px solid #10b981;
+    &:hover { border-color: #10b981; }
+  }
+
+  &External {
+    border-left: 4px solid #f59e0b;
+    &:hover { border-color: #f59e0b; }
+  }
+
+  :global {
+    .ant-card-head {
+      border-bottom: 1px solid #f1f5f9;
+      min-height: 48px;
+      padding: 0 16px;
+    }
+    
+    .ant-card-head-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .ant-card-body {
+      padding: 16px;
+    }
+
+    .ant-descriptions-item-label {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .ant-descriptions-item-content {
+      color: #334155;
+      font-size: 13px;
+    }
+
+    .ant-card-actions {
+      background: #f8fafc;
+      border-top: 1px solid #f1f5f9;
+      
+      li {
+        margin: 8px 0;
+      }
+    }
+  }
+}
+
+.statusIndicator {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 1), 0 0 0 4px currentColor;
+}
+
+.actionButton {
+  font-weight: 600;
+  font-size: 13px;
+  
+  &:hover {
+    background: rgba(16, 185, 129, 0.05);
+  }
+}
+
+.searchActionRow {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  justify-content: center;
+}

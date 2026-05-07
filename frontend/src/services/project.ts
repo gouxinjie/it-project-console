@@ -26,6 +26,7 @@ const PROJECT_RESOURCES_CACHE_PREFIX = "projects:resources";
 const PROJECT_LIST_CACHE_TTL_MS = 45_000;
 const PROJECT_DETAIL_CACHE_TTL_MS = 30_000;
 const PROJECT_RESOURCES_CACHE_TTL_MS = 30_000;
+const PROJECT_LIST_PAGE_LIMIT = 200;
 
 function requestProjects(params?: ProjectQueryParams): Promise<ProjectPage> {
   return request.get<ProjectPage>("/projects/", { params });
@@ -61,6 +62,41 @@ export async function getProjects(params?: ProjectQueryParams): Promise<ProjectP
     cacheKey,
     () => requestProjects(params),
     PROJECT_LIST_CACHE_TTL_MS,
+  );
+}
+
+export async function getAllProjects(
+  params?: Omit<ProjectQueryParams, "skip" | "limit">,
+): Promise<ProjectSummary[]> {
+  const firstPage = await getProjects({
+    ...params,
+    skip: 0,
+    limit: PROJECT_LIST_PAGE_LIMIT,
+  });
+
+  if (firstPage.total <= firstPage.items.length) {
+    return firstPage.items;
+  }
+
+  const pageRequests: Array<Promise<ProjectPage>> = [];
+  for (
+    let skip = firstPage.items.length;
+    skip < firstPage.total;
+    skip += PROJECT_LIST_PAGE_LIMIT
+  ) {
+    pageRequests.push(
+      getProjects({
+        ...params,
+        skip,
+        limit: PROJECT_LIST_PAGE_LIMIT,
+      }),
+    );
+  }
+
+  const remainingPages = await Promise.all(pageRequests);
+  return [...firstPage.items, ...remainingPages.flatMap((page) => page.items)].slice(
+    0,
+    firstPage.total,
   );
 }
 

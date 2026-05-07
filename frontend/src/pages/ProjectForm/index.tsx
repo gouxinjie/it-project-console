@@ -19,7 +19,7 @@ import {
   PROJECT_STATUS_OPTIONS,
   PROJECT_TYPE_OPTIONS,
 } from "@/constants/project";
-import { getMembers } from "@/services/member";
+import { getAllMembers } from "@/services/member";
 import { createProject, getProject, updateProject } from "@/services/project";
 import type { Member } from "@/types/member";
 import type { ProjectPayload } from "@/types/project";
@@ -49,10 +49,11 @@ const ProjectForm: React.FC = () => {
 
   const fetchMembers = async () => {
     try {
-      const response = await getMembers({ skip: 0, limit: 1000 });
-      setMembers(response.items);
+      const items = await getAllMembers();
+      setMembers(items);
     } catch (error) {
       console.error("Failed to fetch members:", error);
+      message.error("获取成员列表失败");
     }
   };
 

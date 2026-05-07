@@ -44,10 +44,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   } = theme.useToken();
 
   useEffect(() => {
-    prefetchMembers({ skip: 0, limit: 1000 });
+    prefetchMembers({ skip: 0, limit: 200 });
     prefetchProjects({ skip: 0, limit: 10 });
     const timer = window.setTimeout(() => {
-      prefetchProjects({ skip: 0, limit: 1000 });
+      prefetchProjects({ skip: 0, limit: 200 });
     }, 120);
     return () => window.clearTimeout(timer);
   }, []);
