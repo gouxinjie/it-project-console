@@ -13,8 +13,20 @@ import {
   Spin,
   Typography,
   message,
+  Tooltip,
 } from "antd";
-import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  MinusCircleOutlined,
+  PlusOutlined,
+  ArrowLeftOutlined,
+  CloudServerOutlined,
+  DatabaseOutlined,
+  RocketOutlined,
+  SettingOutlined,
+  AppstoreOutlined,
+  SaveOutlined,
+  InfoCircleOutlined,
+} from "@ant-design/icons";
 import { useNavigate, useParams } from "react-router-dom";
 
 import type { StructuredExternalResourceFormValues } from "@/types/externalResource";
@@ -26,7 +38,15 @@ import {
 } from "@/utils/externalResource";
 
 const { TextArea } = Input;
-const { Paragraph, Text } = Typography;
+const { Paragraph, Text, Title } = Typography;
+
+const SECTION_ICONS: Record<SectionKey, React.ReactNode> = {
+  aliyun_oss: <CloudServerOutlined />,
+  database_config: <DatabaseOutlined />,
+  redis_config: <RocketOutlined />,
+  middleware_config: <SettingOutlined />,
+  other_config: <AppstoreOutlined />,
+};
 
 type SectionKey = keyof StructuredExternalResourceFormValues;
 type FieldType = "input" | "textarea" | "select";
@@ -263,6 +283,14 @@ function renderField(
   );
 }
 
+const SECTION_THEMES: Record<SectionKey, { bg: string; border: string; accent: string; color: string }> = {
+  aliyun_oss: { bg: '#f0f7ff', border: '#91caff', accent: '#1677ff', color: '#003a8c' },
+  database_config: { bg: '#f6ffed', border: '#b7eb8f', accent: '#52c41a', color: '#135200' },
+  redis_config: { bg: '#fff7e6', border: '#ffd591', accent: '#fa8c16', color: '#873800' },
+  middleware_config: { bg: '#f9f0ff', border: '#d3adf7', accent: '#722ed1', color: '#22075e' },
+  other_config: { bg: '#fffbe6', border: '#ffe58f', accent: '#faad14', color: '#874d00' },
+};
+
 const ProjectExternalResourceForm: React.FC = () => {
   const navigate = useNavigate();
   const { projectId } = useParams<{ projectId: string }>();
@@ -343,9 +371,21 @@ const ProjectExternalResourceForm: React.FC = () => {
 
   return (
     <Card
-      title="外部资源"
+      title={
+        <Space>
+          <Button 
+            type="text" 
+            icon={<ArrowLeftOutlined />} 
+            onClick={handleCancel} 
+            style={{ marginRight: 8 }}
+          />
+          <Title level={4} style={{ margin: 0 }}>
+            配置外部资源
+          </Title>
+        </Space>
+      }
       bordered={false}
-      extra={<Button onClick={handleCancel}>返回</Button>}
+      style={{ boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)" }}
     >
       {legacyNotice ? (
         <Alert
@@ -353,7 +393,7 @@ const ProjectExternalResourceForm: React.FC = () => {
           showIcon
           message="已自动兼容旧版文本配置"
           description={legacyNotice}
-          style={{ marginBottom: 16 }}
+          style={{ marginBottom: 24, borderRadius: 8 }}
         />
       ) : null}
 
@@ -362,84 +402,149 @@ const ProjectExternalResourceForm: React.FC = () => {
         layout="vertical"
         onFinish={handleSubmit}
         autoComplete="off"
-        size="middle"
+        size="large"
         initialValues={EMPTY_FORM_VALUES}
+        requiredMark="optional"
       >
-        {SECTION_CONFIGS.map((section) => (
-          <div key={section.key}>
-            <Divider orientation="left">{section.title}</Divider>
-            <Paragraph type="secondary" style={{ marginBottom: 12 }}>
-              {section.description}
-            </Paragraph>
-
-            <Form.List name={[section.key, "items"]}>
-              {(fields, { add, remove }) => (
-                <Space direction="vertical" size={16} style={{ width: "100%" }}>
-                  {fields.map((field, index) => (
-                    <Card
-                      key={field.key}
-                      size="small"
-                      title={`${section.title} ${index + 1}`}
-                      extra={
-                        <Button
-                          type="text"
-                          danger
-                          icon={<MinusCircleOutlined />}
-                          onClick={() => remove(field.name)}
-                        >
-                          删除
-                        </Button>
-                      }
-                    >
-                      <Row gutter={16}>
-                        {section.fields.map((fieldConfig) => (
-                          <Col
-                            key={fieldConfig.key}
-                            xs={24}
-                            md={fieldConfig.span ?? 12}
-                          >
-                            {renderField(section.key, field.name, fieldConfig)}
-                          </Col>
-                        ))}
-                      </Row>
-                    </Card>
-                  ))}
-
-                  <Button type="dashed" icon={<PlusOutlined />} onClick={() => add({})} block>
-                    {section.addLabel}
-                  </Button>
+        {SECTION_CONFIGS.map((section) => {
+          const theme = SECTION_THEMES[section.key];
+          return (
+            <div key={section.key} style={{ 
+              marginBottom: 40,
+              padding: '24px',
+              background: theme.bg,
+              border: `1px solid ${theme.border}`,
+              borderLeft: `4px solid ${theme.accent}`,
+              borderRadius: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <Space direction="vertical" size={0}>
+                  <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: theme.color }}>
+                    <span style={{ 
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 32,
+                      height: 32,
+                      background: '#fff',
+                      color: theme.accent,
+                      borderRadius: '8px',
+                      fontSize: 18,
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                    }}>
+                      {SECTION_ICONS[section.key]}
+                    </span>
+                    {section.title}
+                  </Title>
+                  <Text type="secondary" style={{ fontSize: 13, marginLeft: 40 }}>
+                    {section.description}
+                  </Text>
                 </Space>
-              )}
-            </Form.List>
+              </div>
 
-            <Form.Item
-              name={[section.key, "notes"]}
-              label="补充说明"
-              style={{ marginTop: 16 }}
-            >
-              <TextArea
-                rows={4}
-                placeholder="如暂时无法结构化录入，可先补充说明；保存后会按新格式存储。"
-                maxLength={1000}
-                showCount
-              />
-            </Form.Item>
-          </div>
-        ))}
+              <Form.List name={[section.key, "items"]}>
+                {(fields, { add, remove }) => (
+                  <div style={{ background: '#fafafa', padding: fields.length > 0 ? 16 : 0, borderRadius: 8 }}>
+                    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                      {fields.map((field, index) => (
+                        <Card
+                          key={field.key}
+                          size="small"
+                          title={
+                            <Space>
+                              <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>#{index + 1}</span>
+                              <Text strong>{section.title} 实例</Text>
+                            </Space>
+                          }
+                          extra={
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<MinusCircleOutlined />}
+                              onClick={() => remove(field.name)}
+                            >
+                              移除
+                            </Button>
+                          }
+                          style={{ border: '1px solid #f0f0f0', borderRadius: 8 }}
+                        >
+                          <Row gutter={16}>
+                            {section.fields.map((fieldConfig) => (
+                              <Col
+                                key={fieldConfig.key}
+                                xs={24}
+                                md={fieldConfig.span ?? 12}
+                              >
+                                {renderField(section.key, field.name, fieldConfig)}
+                              </Col>
+                            ))}
+                          </Row>
+                        </Card>
+                      ))}
 
-        <div style={{ marginTop: 24 }}>
-          <Text type="secondary">
-            说明：结构化字段用于后续详情展示和预警检测，补充说明用于保留复杂或暂未拆分的信息。
-          </Text>
+                      <Button 
+                        type="dashed" 
+                        icon={<PlusOutlined />} 
+                        onClick={() => add({})} 
+                        block
+                        style={{ height: 40, borderRadius: 8, background: '#fff' }}
+                      >
+                        {section.addLabel}
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+              </Form.List>
+
+              <Form.Item
+                name={[section.key, "notes"]}
+                label={
+                  <Space>
+                    <Text strong>补充说明</Text>
+                    <Tooltip title="如暂时无法结构化录入，可在此补充说明">
+                      <InfoCircleOutlined style={{ color: 'rgba(0,0,0,0.45)' }} />
+                    </Tooltip>
+                  </Space>
+                }
+                style={{ marginTop: 16 }}
+              >
+                <TextArea
+                  rows={3}
+                  placeholder="请输入关于此项资源的额外说明或特殊配置..."
+                  maxLength={1000}
+                  showCount
+                />
+              </Form.Item>
+            </div>
+          );
+        })}
+
+        <Divider />
+
+        <div style={{ marginBottom: 24 }}>
+          <Alert
+            message="录入指引"
+            description="结构化字段用于后续详情展示和自动化运维预警，建议尽可能将配置拆分到结构化字段中。暂时无法拆分的信息可以录入在「补充说明」中。"
+            type="info"
+            showIcon
+            style={{ borderRadius: 8 }}
+          />
         </div>
 
-        <Form.Item style={{ marginTop: 24, marginBottom: 0 }}>
-          <Space size="large">
-            <Button type="primary" htmlType="submit" loading={submitting} style={{ width: 120 }}>
-              保存
-            </Button>
-            <Button onClick={handleCancel} style={{ width: 120 }}>
+        <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+          <Space size="middle">
+            <Button onClick={handleCancel} style={{ minWidth: 100 }}>
               取消
+            </Button>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={submitting} 
+              icon={<SaveOutlined />}
+              style={{ minWidth: 140 }}
+            >
+              保存配置
             </Button>
           </Space>
         </Form.Item>

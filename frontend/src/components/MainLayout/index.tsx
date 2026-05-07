@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Avatar, Breadcrumb, Button, Dropdown, Layout, Menu, Space, theme } from "antd";
 import {
   DashboardOutlined,
+  HomeOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ProjectOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 import { clearAuthRelatedCaches } from "@/services/auth";
 import { prefetchMembers } from "@/services/member";
@@ -66,11 +67,6 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     [location.pathname],
   );
 
-  const currentPageTitle = useMemo(
-    () => menuItems.find((item) => item.key === currentMenuKey)?.label || "当前页面",
-    [currentMenuKey],
-  );
-
   const userMenuItems = [
     {
       key: "logout",
@@ -80,10 +76,55 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     },
   ];
 
-  const breadcrumbItems = [
-    { title: "首页" },
-    { title: currentPageTitle },
-  ];
+  const breadcrumbItems = useMemo(() => {
+    const items: Array<{ title: React.ReactNode }> = [
+      {
+        title: (
+          <Link to="/dashboard">
+            <HomeOutlined />
+            <span>首页</span>
+          </Link>
+        ),
+      },
+    ];
+
+    if (currentMenuKey) {
+      const currentMenuItem = menuItems.find((item) => item.key === currentMenuKey);
+      if (currentMenuItem) {
+        items.push({
+          title: (
+            <Space size={4}>
+              {currentMenuItem.icon}
+              <span>{currentMenuItem.label}</span>
+            </Space>
+          ),
+        });
+      }
+    }
+
+    if (location.pathname.includes("/projects/")) {
+      if (location.pathname.includes("/resource/")) {
+        items.push({ title: "资源管理" });
+        if (
+          location.pathname.endsWith("/edit")
+          || location.pathname.includes("/create")
+        ) {
+          items.push({ title: "表单配置" });
+        }
+      } else if (location.pathname.includes("/external-resource/")) {
+        items.push({ title: "外部资源" });
+        if (location.pathname.endsWith("/edit")) {
+          items.push({ title: "表单配置" });
+        }
+      } else if (location.pathname.endsWith("/edit") || location.pathname.includes("/create")) {
+        items.push({ title: "表单配置" });
+      } else if (/^\/projects\/\d+$/.test(location.pathname)) {
+        items.push({ title: "项目详情" });
+      }
+    }
+
+    return items;
+  }, [currentMenuKey, location.pathname]);
 
   return (
     <Layout className={styles.layoutContainer}>
