@@ -1,138 +1,156 @@
 @echo off
 setlocal enabledelayedexpansion
 
+set "ROOT_DIR=%~dp0"
+set "BACKEND_DIR=%ROOT_DIR%backend"
+set "FRONTEND_DIR=%ROOT_DIR%frontend"
+set "FRONTEND_PM=npm"
+
 echo ==========================================
-echo   IT-Project-Console - 企业IT项目管理平台 一键部署与启动
+echo   IT-Project-Console - Setup And Start
 echo ==========================================
 
-:: 1. 检查 Python 环境
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] 未检测到 Python，请先安装 Python 3.10+ 并添加到 PATH。
+    echo [ERROR] Python was not found. Install Python 3.10+ and add it to PATH.
     pause
     exit /b 1
 )
-echo [OK] Python 环境检测通过
+echo [OK] Python detected
 
-:: 2. 检查 Node.js 环境
 node --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [错误] 未检测到 Node.js，请先安装 Node.js v16+。
+    echo [ERROR] Node.js was not found. Install Node.js 16+ and add it to PATH.
     pause
     exit /b 1
 )
-echo [OK] Node.js 环境检测通过
+echo [OK] Node.js detected
 
-:: 3. 检查 pnpm 环境 (如果没有安装则尝试安装或提示)
-call pnpm --version >nul 2>&1
+call npm --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [提示] 未检测到 pnpm，正在尝试通过 npm 安装...
-    call npm install -g pnpm
+    echo [ERROR] npm was not found. Check your Node.js installation.
+    pause
+    exit /b 1
+)
+
+call pnpm --version >nul 2>&1
+if %errorlevel% equ 0 (
+    set "FRONTEND_PM=pnpm"
+    echo [OK] pnpm detected. Frontend will use pnpm.
+) else (
+    echo [INFO] pnpm not found. Frontend will fall back to npm.
+)
+
+echo.
+echo ------------------------------------------
+echo   Step 1/4: Install backend dependencies
+echo ------------------------------------------
+cd /d "%BACKEND_DIR%"
+if errorlevel 1 (
+    echo [ERROR] backend directory was not found.
+    pause
+    exit /b 1
+)
+echo Installing Python dependencies...
+python -m pip install -r requirements.txt
+if %errorlevel% neq 0 (
+    echo [ERROR] Backend dependency installation failed.
+    pause
+    exit /b 1
+)
+echo [OK] Backend dependencies installed
+
+echo.
+echo ------------------------------------------
+echo   Step 2/4: Initialize database
+echo ------------------------------------------
+set "RESET_DB="
+if /I "%PROMAN_RESET_DB%"=="1" set "RESET_DB=1"
+
+if not defined RESET_DB (
+    set /p RESET_DB_INPUT=Rebuild database schema and reseed demo data? This deletes existing project/member/external resource data [y/N]:
+    if /I "!RESET_DB_INPUT!"=="Y" set "RESET_DB=1"
+    if /I "!RESET_DB_INPUT!"=="YES" set "RESET_DB=1"
+)
+
+if defined RESET_DB (
+    echo Rebuilding database schema and reseeding demo data...
+    python reset_db.py --confirm RESET
     if %errorlevel% neq 0 (
-        echo [错误] pnpm 安装失败，请手动安装 pnpm 或检查 npm 环境。
+        echo [ERROR] Database rebuild failed. Check backend/.env and MySQL.
         pause
         exit /b 1
     )
-    echo [OK] pnpm 安装成功
+    echo [OK] Database rebuilt and demo data reseeded
 ) else (
-    echo [OK] pnpm 环境检测通过
-)
-
-echo.
-echo ------------------------------------------
-echo   步骤 1/4: 安装后端依赖
-echo ------------------------------------------
-cd /d %~dp0backend
-if errorlevel 1 (
-    echo [错误] 找不到 backend 目录
-    pause
-    exit /b 1
-)
-echo 正在安装 Python 依赖...
-pip install -r requirements.txt
-if %errorlevel% neq 0 (
-    echo [错误] 后端依赖安装失败，请检查网络或 pip 配置。
-    pause
-    exit /b 1
-)
-echo [OK] 后端依赖安装完成
-
-echo.
-echo ------------------------------------------
-echo   步骤 2/4: 初始化数据库
-echo ------------------------------------------
-echo 正在初始化数据库表结构...
-python init_db.py
-if %errorlevel% neq 0 (
-    echo [错误] 数据库初始化失败，请检查数据库配置 (backend/app/core/config.py) 或 MySQL 服务是否启动。
-    pause
-    exit /b 1
-)
-
-set "SEED_DEMO_DATA="
-if /I "%PROMAN_SEED_DEMO_DATA%"=="1" set "SEED_DEMO_DATA=1"
-
-if not defined SEED_DEMO_DATA (
-    set /p SEED_DEMO_DATA_INPUT=是否加载演示数据? 该操作会清空现有项目/成员数据 [y/N]:
-    if /I "!SEED_DEMO_DATA_INPUT!"=="Y" set "SEED_DEMO_DATA=1"
-    if /I "!SEED_DEMO_DATA_INPUT!"=="YES" set "SEED_DEMO_DATA=1"
-)
-
-if defined SEED_DEMO_DATA (
-    echo 正在填充演示数据...
-    python seed_data.py
+    echo Initializing database schema...
+    python init_db.py
     if %errorlevel% neq 0 (
-        echo [警告] 数据填充脚本执行异常，请检查日志后重试。
-    ) else (
-        echo [OK] 演示数据填充完成
+        echo [ERROR] Database initialization failed. Check backend/.env and MySQL.
+        pause
+        exit /b 1
     )
-) else (
-    echo [OK] 已跳过演示数据填充，仅保留默认管理员账号。
+
+    set "SEED_DEMO_DATA="
+    if /I "%PROMAN_SEED_DEMO_DATA%"=="1" set "SEED_DEMO_DATA=1"
+
+    if not defined SEED_DEMO_DATA (
+        set /p SEED_DEMO_DATA_INPUT=Load demo data without rebuilding schema? This clears existing project/member data [y/N]:
+        if /I "!SEED_DEMO_DATA_INPUT!"=="Y" set "SEED_DEMO_DATA=1"
+        if /I "!SEED_DEMO_DATA_INPUT!"=="YES" set "SEED_DEMO_DATA=1"
+    )
+
+    if defined SEED_DEMO_DATA (
+        echo Seeding demo data...
+        python seed_data.py
+        if %errorlevel% neq 0 (
+            echo [WARN] Demo data seeding failed. Check the output and retry.
+        ) else (
+            echo [OK] Demo data seeded
+        )
+    ) else (
+        echo [OK] Demo data skipped. Default admin account remains available.
+    )
 )
 
 echo.
 echo ------------------------------------------
-echo   步骤 3/4: 安装前端依赖
+echo   Step 3/4: Install frontend dependencies
 echo ------------------------------------------
-cd /d %~dp0frontend
+cd /d "%FRONTEND_DIR%"
 if errorlevel 1 (
-    echo [错误] 找不到 frontend 目录
+    echo [ERROR] frontend directory was not found.
     pause
     exit /b 1
 )
-echo 正在安装前端依赖 (pnpm)...
-call pnpm install
+echo Installing frontend dependencies with %FRONTEND_PM%...
+call %FRONTEND_PM% install
 if %errorlevel% neq 0 (
-    echo [错误] 前端依赖安装失败，请检查网络。
+    echo [ERROR] Frontend dependency installation failed.
     pause
     exit /b 1
 )
-echo [OK] 前端依赖安装完成
+echo [OK] Frontend dependencies installed
 
 echo.
 echo ------------------------------------------
-echo   步骤 4/4: 启动服务
+echo   Step 4/4: Start services
 echo ------------------------------------------
+cd /d "%ROOT_DIR%"
 
-:: 返回根目录
-cd /d %~dp0
+echo [START] Backend (FastAPI)...
+start "IT-Project-Backend" cmd /k "cd /d ""%BACKEND_DIR%"" && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
 
-:: 启动后端
-echo [启动] 后端服务 (FastAPI)...
-start "IT-Project-Backend" cmd /k "cd /d %~dp0backend && uvicorn app.main:app --reload --port 8000"
-
-:: 启动前端
-echo [启动] 前端服务 (Vite/React)...
-start "IT-Project-Frontend" cmd /k "cd /d %~dp0frontend && pnpm run dev"
+echo [START] Frontend (Vite/React, %FRONTEND_PM%)...
+start "IT-Project-Frontend" cmd /k "cd /d ""%FRONTEND_DIR%"" && %FRONTEND_PM% run dev"
 
 echo.
 echo ==========================================
-echo   全部就绪！服务已在独立窗口中启动。
-echo   ------------------------------------------
-echo   后端地址: http://127.0.0.1:8000/docs
-echo   前端地址: http://localhost:3000 (请留意Vite输出端口)
-echo   ------------------------------------------
-echo   默认账户: admin / admin123!@#
+echo   Setup complete. Services started in separate windows.
+echo   Backend docs: http://127.0.0.1:8000/docs
+echo   Frontend:     http://127.0.0.1:3000
+echo   Package manager: %FRONTEND_PM%
+echo   Admin: admin / admin123!@#
 echo ==========================================
 echo.
 pause

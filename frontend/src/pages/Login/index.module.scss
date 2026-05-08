@@ -204,25 +204,6 @@
     }
 }
 
-.securityBanner {
-    display: flex;
-    gap: 8px;
-    padding: 8px 10px;
-    background: #fffbeb;
-    border: 1px solid #fef3c7;
-    border-radius: 6px;
-    color: #92400e;
-    font-size: 11px;
-    line-height: 1.4;
-    margin-bottom: 16px;
-
-    svg {
-        margin-top: 2px;
-        color: #f59e0b;
-        flex-shrink: 0;
-    }
-}
-
 .loginForm {
     :global {
         .ant-form-item {

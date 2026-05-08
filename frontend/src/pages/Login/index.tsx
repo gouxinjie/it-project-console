@@ -154,13 +154,6 @@ const Login: React.FC = () => {
                 </Text>
               </div>
 
-              <div className={styles.securityBanner}>
-                <SafetyCertificateOutlined />
-                <span>
-                  {isRegister ? "注册采用普通用户默认权限，适合先快速进入系统。" : "当前调试环境已预填管理员账号，登录后可直接进入项目与成员管理。"}
-                </span>
-              </div>
-
               <Form
                 form={form}
                 name="login"
