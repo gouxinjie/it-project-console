@@ -184,22 +184,22 @@ const ProjectResourceForm: React.FC = () => {
         layout="vertical"
         onFinish={handleSubmit}
         autoComplete="off"
-        size="large"
+        size="middle"
         requiredMark="optional"
       >
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#f0f7ff', 
           border: '1px solid #91caff', 
           borderLeft: '4px solid #1677ff',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#003a8c' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#003a8c' }}>
             <CodeOutlined />
             基本信息
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item
                 label="资源类型"
@@ -281,18 +281,18 @@ const ProjectResourceForm: React.FC = () => {
         </div>
 
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#f6ffed', 
           border: '1px solid #b7eb8f', 
           borderLeft: '4px solid #52c41a',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#135200' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#135200' }}>
             <CloudUploadOutlined />
             部署信息
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
               <Form.Item label="部署方式" name="deploy_method" style={{ marginBottom: 0 }}>
                 <Select 
@@ -338,7 +338,7 @@ const ProjectResourceForm: React.FC = () => {
                 style={{ marginBottom: 0 }}
               >
                 <TextArea
-                  rows={4}
+                  rows={3}
                   placeholder="1. npm install&#10;2. npm run build&#10;3. docker build..."
                   maxLength={1000}
                   showCount
@@ -349,18 +349,18 @@ const ProjectResourceForm: React.FC = () => {
         </div>
 
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#fffbe6', 
           border: '1px solid #ffe58f', 
           borderLeft: '4px solid #faad14',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#874d00' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#874d00' }}>
             <GlobalOutlined />
             环境信息
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item label="生产域名" name="prod_domain" style={{ marginBottom: 0 }}>
                 <Input 
@@ -384,22 +384,22 @@ const ProjectResourceForm: React.FC = () => {
         </div>
 
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#f9f0ff', 
           border: '1px solid #d3adf7', 
           borderLeft: '4px solid #722ed1',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#22075e' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#22075e' }}>
             <FileTextOutlined />
             其他信息
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item label="资源备注" name="resource_remarks" style={{ marginBottom: 0 }}>
                 <TextArea
-                  rows={3}
+                  rows={2}
                   placeholder="请输入资源备注信息"
                   maxLength={500}
                   showCount
@@ -410,7 +410,7 @@ const ProjectResourceForm: React.FC = () => {
             <Col xs={24} sm={12}>
               <Form.Item label="特别说明" name="special_note" style={{ marginBottom: 0 }}>
                 <TextArea
-                  rows={3}
+                  rows={2}
                   placeholder="如：需要特定的环境变量，或依赖外部服务"
                   maxLength={500}
                   showCount

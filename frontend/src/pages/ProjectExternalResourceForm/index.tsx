@@ -249,9 +249,9 @@ function renderField(
 
   if (fieldConfig.type === "textarea") {
     return (
-      <Form.Item key={fieldConfig.key} name={namePath} label={fieldConfig.label}>
+      <Form.Item key={fieldConfig.key} name={namePath} label={fieldConfig.label} style={{ marginBottom: 12 }}>
         <TextArea
-          rows={fieldConfig.rows ?? 3}
+          rows={fieldConfig.rows ?? 2}
           placeholder={fieldConfig.placeholder}
           maxLength={500}
           showCount
@@ -262,7 +262,7 @@ function renderField(
 
   if (fieldConfig.type === "select") {
     return (
-      <Form.Item key={fieldConfig.key} name={namePath} label={fieldConfig.label}>
+      <Form.Item key={fieldConfig.key} name={namePath} label={fieldConfig.label} style={{ marginBottom: 12 }}>
         <Select
           allowClear
           placeholder={fieldConfig.placeholder}
@@ -276,7 +276,7 @@ function renderField(
   }
 
   return (
-    <Form.Item key={fieldConfig.key} name={namePath} label={fieldConfig.label}>
+    <Form.Item key={fieldConfig.key} name={namePath} label={fieldConfig.label} style={{ marginBottom: 12 }}>
       <Input placeholder={fieldConfig.placeholder} maxLength={200} />
     </Form.Item>
   );
@@ -377,41 +377,58 @@ const ProjectExternalResourceForm: React.FC = () => {
         layout="vertical"
         onFinish={handleSubmit}
         autoComplete="off"
-        size="large"
+        size="middle"
         initialValues={EMPTY_FORM_VALUES}
         requiredMark="optional"
       >
         {SECTION_CONFIGS.map((section) => {
           const theme = SECTION_THEMES[section.key];
           return (
-            <div key={section.key} style={{ 
-              marginBottom: 40,
-              padding: '24px',
-              background: theme.bg,
-              border: `1px solid ${theme.border}`,
-              borderLeft: `4px solid ${theme.accent}`,
-              borderRadius: '12px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <Space direction="vertical" size={0}>
-                  <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: 0, color: theme.color }}>
-                    <span style={{ 
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: 32,
-                      height: 32,
-                      background: '#fff',
-                      color: theme.accent,
-                      borderRadius: '8px',
-                      fontSize: 18,
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                    }}>
+            <div
+              key={section.key}
+              style={{
+                marginBottom: 20,
+                padding: "16px 20px",
+                background: theme.bg,
+                border: `1px solid ${theme.border}`,
+                borderLeft: `4px solid ${theme.accent}`,
+                borderRadius: "8px",
+              }}
+            >
+              <div style={{ marginBottom: 12 }}>
+                <Space direction="vertical" size={2} style={{ width: "100%" }}>
+                  <Title
+                    level={5}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      margin: 0,
+                      color: theme.color,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 28,
+                        height: 28,
+                        background: "#fff",
+                        color: theme.accent,
+                        borderRadius: "6px",
+                        fontSize: 16,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                      }}
+                    >
                       {SECTION_ICONS[section.key]}
                     </span>
                     {section.title}
                   </Title>
-                  <Text type="secondary" style={{ fontSize: 13, marginLeft: 40 }}>
+                  <Text
+                    type="secondary"
+                    style={{ fontSize: 12, marginLeft: 40 }}
+                  >
                     {section.description}
                   </Text>
                 </Space>
@@ -419,15 +436,32 @@ const ProjectExternalResourceForm: React.FC = () => {
 
               <Form.List name={[section.key, "items"]}>
                 {(fields, { add, remove }) => (
-                  <div style={{ background: '#fafafa', padding: fields.length > 0 ? 16 : 0, borderRadius: 8 }}>
-                    <Space direction="vertical" size={16} style={{ width: "100%" }}>
+                  <div
+                    style={{
+                      background: "#fafafa",
+                      padding: fields.length > 0 ? 12 : 0,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <Space
+                      direction="vertical"
+                      size={12}
+                      style={{ width: "100%" }}
+                    >
                       {fields.map((field, index) => (
                         <Card
                           key={field.key}
                           size="small"
                           title={
                             <Space>
-                              <span style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>#{index + 1}</span>
+                              <span
+                                style={{
+                                  color: "rgba(0,0,0,0.45)",
+                                  fontSize: 12,
+                                }}
+                              >
+                                #{index + 1}
+                              </span>
                               <Text strong>{section.title} 实例</Text>
                             </Space>
                           }
@@ -442,28 +476,39 @@ const ProjectExternalResourceForm: React.FC = () => {
                               移除
                             </Button>
                           }
-                          style={{ border: '1px solid #f0f0f0', borderRadius: 8 }}
+                          style={{
+                            border: "1px solid #f0f0f0",
+                            borderRadius: 8,
+                          }}
                         >
-                          <Row gutter={16}>
+                          <Row gutter={12}>
                             {section.fields.map((fieldConfig) => (
                               <Col
                                 key={fieldConfig.key}
                                 xs={24}
                                 md={fieldConfig.span ?? 12}
                               >
-                                {renderField(section.key, field.name, fieldConfig)}
+                                {renderField(
+                                  section.key,
+                                  field.name,
+                                  fieldConfig,
+                                )}
                               </Col>
                             ))}
                           </Row>
                         </Card>
                       ))}
 
-                      <Button 
-                        type="dashed" 
-                        icon={<PlusOutlined />} 
-                        onClick={() => add({})} 
+                      <Button
+                        type="dashed"
+                        icon={<PlusOutlined />}
+                        onClick={() => add({})}
                         block
-                        style={{ height: 40, borderRadius: 8, background: '#fff' }}
+                        style={{
+                          height: 36,
+                          borderRadius: 8,
+                          background: "#fff",
+                        }}
                       >
                         {section.addLabel}
                       </Button>
@@ -476,16 +521,20 @@ const ProjectExternalResourceForm: React.FC = () => {
                 name={[section.key, "notes"]}
                 label={
                   <Space>
-                    <Text strong>补充说明</Text>
+                    <Text strong style={{ fontSize: 13 }}>
+                      补充说明
+                    </Text>
                     <Tooltip title="如暂时无法结构化录入，可在此补充说明">
-                      <InfoCircleOutlined style={{ color: 'rgba(0,0,0,0.45)' }} />
+                      <InfoCircleOutlined
+                        style={{ color: "rgba(0,0,0,0.45)" }}
+                      />
                     </Tooltip>
                   </Space>
                 }
-                style={{ marginTop: 16 }}
+                style={{ marginTop: 12, marginBottom: 0 }}
               >
                 <TextArea
-                  rows={3}
+                  rows={2}
                   placeholder="请输入关于此项资源的额外说明或特殊配置..."
                   maxLength={1000}
                   showCount
@@ -497,13 +546,13 @@ const ProjectExternalResourceForm: React.FC = () => {
 
         <Divider />
 
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 20 }}>
           <Alert
             message="录入指引"
             description="结构化字段用于后续详情展示和自动化运维预警，建议尽可能将配置拆分到结构化字段中。暂时无法拆分的信息可以录入在「补充说明」中。"
             type="info"
             showIcon
-            style={{ borderRadius: 8 }}
+            style={{ borderRadius: 8, padding: '8px 16px' }}
           />
         </div>
 
@@ -517,7 +566,7 @@ const ProjectExternalResourceForm: React.FC = () => {
               htmlType="submit" 
               loading={submitting} 
               icon={<SaveOutlined />}
-              style={{ minWidth: 140 }}
+              style={{ minWidth: 120 }}
             >
               保存配置
             </Button>

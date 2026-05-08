@@ -13,6 +13,8 @@ import {
   Tag,
   Tooltip,
   message,
+  Row,
+  Col,
   type TableColumnsType,
 } from "antd";
 import {
@@ -338,35 +340,45 @@ const UserList: React.FC = () => {
           message="管理员可在此创建账号、调整角色状态，并为其他用户重置密码。当前管理员账号已预填在登录页。"
         />
 
-        <Card
-          title="账号管理"
-          extra={(
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-              新建账号
-            </Button>
-          )}
-        >
-          <Space style={{ width: "100%", marginBottom: 16, justifyContent: "space-between" }} wrap>
-            <Input.Search
-              allowClear
-              enterButton={<SearchOutlined />}
+        <Card title="账号管理">
+          <div className="flex gap-4 mb-4">
+            <Input
+              prefix={<SearchOutlined />}
               placeholder="按用户名或邮箱搜索"
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
-              onSearch={handleSearch}
-              style={{ maxWidth: 360 }}
+              onPressEnter={() => handleSearch()}
+              className="w-64"
+              style={{ borderRadius: 8 }}
             />
+            <Button
+              type="primary"
+              icon={<SearchOutlined />}
+              onClick={() => handleSearch()}
+              style={{ background: "#1e293b", borderColor: "#1e293b", borderRadius: 8 }}
+            >
+              搜索账号
+            </Button>
             <Select<StatusFilter>
               value={statusFilter}
               onChange={handleStatusFilterChange}
-              style={{ width: 160 }}
+              style={{ width: 160, borderRadius: 8 }}
               options={[
                 { label: "全部状态", value: "all" },
                 { label: "仅启用", value: "active" },
                 { label: "仅停用", value: "inactive" },
               ]}
             />
-          </Space>
+            <div className="flex-1" />
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={openCreateModal}
+              style={{ background: "#10b981", borderColor: "#10b981", borderRadius: 8 }}
+            >
+              新建账号
+            </Button>
+          </div>
 
           <Table<User>
             rowKey="id"
@@ -398,81 +410,106 @@ const UserList: React.FC = () => {
           editorForm.resetFields();
         }}
         destroyOnClose
+        width={560}
+        okButtonProps={{ style: { background: "#10b981", borderColor: "#10b981" } }}
       >
-        <Form form={editorForm} layout="vertical" requiredMark={false}>
-          <Form.Item
-            label="用户名"
-            name="username"
-            rules={[
-              { required: true, message: "请输入用户名" },
-              { min: 3, message: "用户名至少 3 位" },
-            ]}
-          >
-            <Input placeholder="请输入用户名" disabled={Boolean(editingUser)} />
-          </Form.Item>
-
-          <Form.Item
-            label="邮箱"
-            name="email"
-            rules={[
-              { required: true, message: "请输入邮箱" },
-              { type: "email", message: "请输入有效的邮箱地址" },
-            ]}
-          >
-            <Input placeholder="请输入邮箱地址" />
-          </Form.Item>
+        <Form form={editorForm} layout="vertical" requiredMark={false} style={{ marginTop: 16 }}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="用户名"
+                name="username"
+                rules={[
+                  { required: true, message: "请输入用户名" },
+                  { min: 3, message: "用户名至少 3 位" },
+                ]}
+              >
+                <Input placeholder="请输入用户名" disabled={Boolean(editingUser)} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="邮箱"
+                name="email"
+                rules={[
+                  { required: true, message: "请输入邮箱" },
+                  { type: "email", message: "请输入有效的邮箱地址" },
+                ]}
+              >
+                <Input placeholder="请输入邮箱地址" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           {!editingUser ? (
-            <>
-              <Form.Item
-                label="初始密码"
-                name="password"
-                rules={[
-                  { required: true, message: "请输入初始密码" },
-                  { min: 6, message: "密码至少 6 位" },
-                  {
-                    pattern: passwordPattern,
-                    message: "密码需包含字母和数字，且仅支持字母数字",
-                  },
-                ]}
-                extra="密码需至少 6 位，并包含字母和数字，且仅支持字母数字。"
-              >
-                <Input.Password placeholder="请输入初始密码" />
-              </Form.Item>
-
-              <Form.Item
-                label="确认初始密码"
-                name="confirm_password"
-                dependencies={["password"]}
-                rules={[
-                  { required: true, message: "请再次输入初始密码" },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue("password") === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error("两次输入的密码不一致"));
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="初始密码"
+                  name="password"
+                  rules={[
+                    { required: true, message: "请输入初始密码" },
+                    { min: 6, message: "密码至少 6 位" },
+                    {
+                      pattern: passwordPattern,
+                      message: "密码需包含字母和数字",
                     },
-                  }),
-                ]}
-              >
-                <Input.Password placeholder="请再次输入初始密码" />
-              </Form.Item>
-            </>
+                  ]}
+                >
+                  <Input.Password placeholder="请输入初始密码" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="确认初始密码"
+                  name="confirm_password"
+                  dependencies={["password"]}
+                  rules={[
+                    { required: true, message: "请再次输入初始密码" },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue("password") === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error("两次输入的密码不一致"));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password placeholder="请再次输入初始密码" />
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <div style={{ fontSize: 12, color: "rgba(0,0,0,0.45)", marginBottom: 24, marginTop: -12 }}>
+                  密码需至少 6 位，并包含字母和数字。
+                </div>
+              </Col>
+            </Row>
           ) : null}
 
-          <Form.Item label="账号启用" name="is_active" valuePropName="checked">
-            <Switch disabled={isEditingSelf} />
-          </Form.Item>
-
-          <Form.Item
-            label="管理员权限"
-            name="is_superuser"
-            valuePropName="checked"
-            extra={isEditingSelf ? "当前登录管理员不能在此修改自己的角色和状态。" : undefined}
-          >
-            <Switch disabled={isEditingSelf} />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="账号启用" name="is_active" valuePropName="checked">
+                <Switch disabled={isEditingSelf} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="管理员权限"
+                name="is_superuser"
+                valuePropName="checked"
+              >
+                <Switch disabled={isEditingSelf} />
+              </Form.Item>
+            </Col>
+            {isEditingSelf && (
+              <Col span={24}>
+                <div style={{ fontSize: 12, color: "#faad14", marginTop: -12, marginBottom: 12 }}>
+                  当前登录管理员不能在此修改自己的角色和状态。
+                </div>
+              </Col>
+            )}
+          </Row>
         </Form>
       </Modal>
 
@@ -488,42 +525,52 @@ const UserList: React.FC = () => {
           passwordForm.resetFields();
         }}
         destroyOnClose
+        width={480}
       >
-        <Form form={passwordForm} layout="vertical" requiredMark={false}>
-          <Form.Item
-            label="新密码"
-            name="new_password"
-            rules={[
-              { required: true, message: "请输入新密码" },
-              { min: 6, message: "密码至少 6 位" },
-              {
-                pattern: passwordPattern,
-                message: "密码需包含字母和数字，且仅支持字母数字",
-              },
-            ]}
-            extra="密码需至少 6 位，并包含字母和数字，且仅支持字母数字。"
-          >
-            <Input.Password placeholder="请输入新密码" />
-          </Form.Item>
-
-          <Form.Item
-            label="确认新密码"
-            name="confirm_password"
-            dependencies={["new_password"]}
-            rules={[
-              { required: true, message: "请再次输入新密码" },
-              ({ getFieldValue }) => ({
-                validator(_, value) {
-                  if (!value || getFieldValue("new_password") === value) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error("两次输入的密码不一致"));
-                },
-              }),
-            ]}
-          >
-            <Input.Password placeholder="请再次输入新密码" />
-          </Form.Item>
+        <Form form={passwordForm} layout="vertical" requiredMark={false} style={{ marginTop: 16 }}>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                label="新密码"
+                name="new_password"
+                rules={[
+                  { required: true, message: "请输入新密码" },
+                  { min: 6, message: "密码至少 6 位" },
+                  {
+                    pattern: passwordPattern,
+                    message: "密码需包含字母和数字",
+                  },
+                ]}
+              >
+                <Input.Password placeholder="请输入新密码" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item
+                label="确认新密码"
+                name="confirm_password"
+                dependencies={["new_password"]}
+                rules={[
+                  { required: true, message: "请再次输入新密码" },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (!value || getFieldValue("new_password") === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error("两次输入的密码不一致"));
+                    },
+                  }),
+                ]}
+              >
+                <Input.Password placeholder="请再次输入新密码" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <div style={{ fontSize: 12, color: "rgba(0,0,0,0.45)", marginTop: -12 }}>
+                密码需至少 6 位，并包含字母和数字。
+              </div>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </>

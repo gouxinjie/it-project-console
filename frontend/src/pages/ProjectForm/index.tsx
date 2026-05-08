@@ -147,22 +147,22 @@ const ProjectForm: React.FC = () => {
         layout="vertical"
         onFinish={handleSubmit}
         autoComplete="off"
-        size="large"
+        size="middle"
         requiredMark="optional"
       >
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#f0f7ff', 
           border: '1px solid #91caff', 
           borderLeft: '4px solid #1677ff',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#003a8c' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#003a8c' }}>
             <ProjectOutlined />
             基本信息
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col span={24}>
               <Form.Item
                 label="项目名称"
@@ -220,10 +220,10 @@ const ProjectForm: React.FC = () => {
               </Form.Item>
             </Col>
 
-            <Col span={24} style={{ marginTop: 24 }}>
+            <Col span={24}>
               <Form.Item label="项目描述" name="project_desc" style={{ marginBottom: 0 }}>
                 <TextArea
-                  rows={4}
+                  rows={3}
                   placeholder="请输入项目的背景、目标和主要功能描述"
                   maxLength={500}
                   showCount
@@ -234,18 +234,18 @@ const ProjectForm: React.FC = () => {
         </div>
 
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#f6ffed', 
           border: '1px solid #b7eb8f', 
           borderLeft: '4px solid #52c41a',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#135200' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#135200' }}>
             <TeamOutlined />
             团队与技术
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} sm={12}>
               <Form.Item label="技术栈" name="tech_framework" style={{ marginBottom: 0 }}>
                 <Input 
@@ -277,18 +277,18 @@ const ProjectForm: React.FC = () => {
         </div>
 
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#fffbe6', 
           border: '1px solid #ffe58f', 
           borderLeft: '4px solid #faad14',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#874d00' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#874d00' }}>
             <AppstoreOutlined />
             业务归属
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col xs={24} sm={8}>
               <Form.Item
                 label="业务方"
@@ -341,22 +341,22 @@ const ProjectForm: React.FC = () => {
         </div>
 
         <div style={{ 
-          marginBottom: 32, 
-          padding: '24px', 
+          marginBottom: 20, 
+          padding: '20px 24px', 
           background: '#f9f0ff', 
           border: '1px solid #d3adf7', 
           borderLeft: '4px solid #722ed1',
           borderRadius: '8px' 
         }}>
-          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 20, marginTop: 0, color: '#22075e' }}>
+          <Title level={5} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 16, marginTop: 0, color: '#22075e' }}>
             <InfoCircleOutlined />
             辅助信息
           </Title>
-          <Row gutter={[24, 24]}>
+          <Row gutter={[16, 16]}>
             <Col span={24}>
               <Form.Item label="备注" name="remarks" style={{ marginBottom: 0 }}>
                 <TextArea
-                  rows={3}
+                  rows={2}
                   placeholder="请输入备注信息，如项目背景、特殊要求等"
                   maxLength={500}
                   showCount

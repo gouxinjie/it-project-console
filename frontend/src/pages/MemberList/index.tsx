@@ -501,35 +501,48 @@ const MemberList: React.FC = () => {
         open={isEditOpen}
         onOk={() => void handleEditSubmit()}
         onCancel={() => setIsEditOpen(false)}
-        width={600}
+        width={560}
+        okButtonProps={{ style: { background: "#10b981", borderColor: "#10b981" } }}
       >
-        <Form<MemberPayload> form={form} layout="vertical">
-          <Form.Item
-            label="姓名"
-            name="member_name"
-            rules={[{ required: true, message: "请输入成员姓名" }]}
-          >
-            <Input placeholder="请输入成员姓名" maxLength={50} />
-          </Form.Item>
-          <Form.Item
-            label="岗位"
-            name="position"
-            rules={[{ required: true, message: "请输入岗位信息" }]}
-          >
-            <Input placeholder="请输入岗位信息" maxLength={100} />
-          </Form.Item>
-          <Form.Item label="联系电话" name="phone">
-            <Input placeholder="请输入联系电话" maxLength={20} />
-          </Form.Item>
-          <Form.Item
-            label="邮箱"
-            name="email"
-            rules={[{ type: "email", message: "请输入有效的邮箱地址" }]}
-          >
-            <Input placeholder="请输入邮箱地址" maxLength={100} />
-          </Form.Item>
-          <Form.Item label="技术栈" name="tech_stack">
-            <TextArea rows={4} placeholder="请输入技术栈" maxLength={500} showCount />
+        <Form<MemberPayload> form={form} layout="vertical" style={{ marginTop: 16 }}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="姓名"
+                name="member_name"
+                rules={[{ required: true, message: "请输入成员姓名" }]}
+              >
+                <Input placeholder="请输入成员姓名" maxLength={50} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="岗位"
+                name="position"
+                rules={[{ required: true, message: "请输入岗位信息" }]}
+              >
+                <Input placeholder="请输入岗位信息" maxLength={100} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="联系电话" name="phone">
+                <Input placeholder="请输入联系电话" maxLength={20} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="邮箱"
+                name="email"
+                rules={[{ type: "email", message: "请输入有效的邮箱地址" }]}
+              >
+                <Input placeholder="请输入邮箱地址" maxLength={100} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item label="技术栈" name="tech_stack" style={{ marginBottom: 8 }}>
+            <TextArea rows={3} placeholder="请输入技术栈" maxLength={500} showCount />
           </Form.Item>
         </Form>
       </Modal>
