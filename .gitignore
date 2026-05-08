@@ -55,6 +55,8 @@ ENV/
 .env
 backend/.env
 frontend/.env
+frontend/.env.development
+frontend/.env.development.local
 .pytest_cache/
 .coverage
 htmlcov/

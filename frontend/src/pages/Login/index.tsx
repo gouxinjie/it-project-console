@@ -234,10 +234,19 @@ const Login: React.FC = () => {
                   {isRegister
                     ? "注册完成后即可登录并进入工作区。"
                     : devAdminPassword
-                      ? "当前为本地开发模式，管理员账号和密码已直接显示。"
+                      ? "当前为本地开发模式，管理员账号和默认初始化密码已直接显示。"
                       : "管理员用户名 admin 已预填，请输入对应密码后登录。"}
                 </Text>
               </div>
+
+              {/* {!isRegister && devAdminPassword ? (
+                <Alert
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                  message="当前显示的是本地开发用的默认管理员初始化密码；如果该管理员账号已存在且密码被修改，请以数据库当前密码为准。"
+                />
+              ) : null} */}
 
               {shouldWarnTransport ? (
                 <Alert

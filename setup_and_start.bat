@@ -4,11 +4,23 @@ setlocal enabledelayedexpansion
 set "ROOT_DIR=%~dp0"
 set "BACKEND_DIR=%ROOT_DIR%backend"
 set "FRONTEND_DIR=%ROOT_DIR%frontend"
+set "BACKEND_ENV=%BACKEND_DIR%\.env"
+set "BACKEND_ENV_EXAMPLE=%BACKEND_DIR%\.env.example"
+set "FRONTEND_ENV_DEV=%FRONTEND_DIR%\.env.development.local"
+set "FRONTEND_ENV_TEMP=%FRONTEND_DIR%\.env.development.local.tmp"
 set "FRONTEND_PM=npm"
+set "ADMIN_USERNAME=admin"
+set "ADMIN_PASSWORD="
 
 echo ==========================================
 echo   IT-Project-Console - Setup And Start
 echo ==========================================
+
+call :prepare_env_files
+if %errorlevel% neq 0 (
+    pause
+    exit /b 1
+)
 
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
@@ -43,7 +55,7 @@ if %errorlevel% equ 0 (
 
 echo.
 echo ------------------------------------------
-echo   Step 1/4: Install backend dependencies
+echo   Step 2/5: Install backend dependencies
 echo ------------------------------------------
 cd /d "%BACKEND_DIR%"
 if errorlevel 1 (
@@ -62,7 +74,7 @@ echo [OK] Backend dependencies installed
 
 echo.
 echo ------------------------------------------
-echo   Step 2/4: Initialize database
+echo   Step 3/5: Initialize database
 echo ------------------------------------------
 set "RESET_DB="
 if /I "%PROMAN_RESET_DB%"=="1" set "RESET_DB=1"
@@ -115,7 +127,7 @@ if defined RESET_DB (
 
 echo.
 echo ------------------------------------------
-echo   Step 3/4: Install frontend dependencies
+echo   Step 4/5: Install frontend dependencies
 echo ------------------------------------------
 cd /d "%FRONTEND_DIR%"
 if errorlevel 1 (
@@ -134,7 +146,7 @@ echo [OK] Frontend dependencies installed
 
 echo.
 echo ------------------------------------------
-echo   Step 4/4: Start services
+echo   Step 5/5: Start services
 echo ------------------------------------------
 cd /d "%ROOT_DIR%"
 
@@ -147,10 +159,101 @@ start "IT-Project-Frontend" cmd /k "cd /d ""%FRONTEND_DIR%"" && %FRONTEND_PM% ru
 echo.
 echo ==========================================
 echo   Setup complete. Services started in separate windows.
-echo   Backend docs: http://127.0.0.1:8000/docs
-echo   Frontend:     http://127.0.0.1:3000
-echo   Package manager: %FRONTEND_PM%
-echo   Admin: admin / admin123!@#
+echo   Backend docs:  http://127.0.0.1:8000/docs
+echo   Frontend:      http://127.0.0.1:3000
+echo   Package mgr:   %FRONTEND_PM%
+if defined ADMIN_PASSWORD (
+    echo   Display admin: %ADMIN_USERNAME% / %ADMIN_PASSWORD% (bootstrap value from backend/.env)
+) else (
+    echo   Display admin: %ADMIN_USERNAME% / [empty in backend/.env]
+)
+echo   Login config:  frontend/.env.development.local
+echo   Note: if the admin already exists in DB, the actual login password may differ.
 echo ==========================================
 echo.
 pause
+goto :eof
+
+:prepare_env_files
+echo.
+echo ------------------------------------------
+echo   Step 1/5: Prepare local env files
+echo ------------------------------------------
+
+if not exist "%BACKEND_DIR%" (
+    echo [ERROR] backend directory was not found.
+    exit /b 1
+)
+
+if not exist "%FRONTEND_DIR%" (
+    echo [ERROR] frontend directory was not found.
+    exit /b 1
+)
+
+if not exist "%BACKEND_ENV%" (
+    if not exist "%BACKEND_ENV_EXAMPLE%" (
+        echo [ERROR] backend/.env was not found and backend/.env.example is missing.
+        exit /b 1
+    )
+
+    copy /y "%BACKEND_ENV_EXAMPLE%" "%BACKEND_ENV%" >nul
+    if errorlevel 1 (
+        echo [ERROR] Failed to create backend/.env from .env.example.
+        exit /b 1
+    )
+    echo [OK] Created backend/.env from .env.example
+    echo [INFO] Review backend/.env and update database credentials if needed.
+) else (
+    echo [OK] backend/.env detected
+)
+
+call :load_admin_settings
+if %errorlevel% neq 0 exit /b 1
+
+call :sync_frontend_dev_env
+if %errorlevel% neq 0 exit /b 1
+
+echo [OK] frontend/.env.development.local synced from backend/.env bootstrap admin settings
+if defined ADMIN_PASSWORD (
+    echo [OK] Login-page display password prepared: %ADMIN_USERNAME% / %ADMIN_PASSWORD%
+    echo [INFO] Existing admin accounts are not auto-reset; actual DB password may differ.
+) else (
+    echo [WARN] DEFAULT_ADMIN_PASSWORD is empty in backend/.env
+    echo [WARN] A fresh default admin cannot be created until you set it
+)
+
+exit /b 0
+
+:load_admin_settings
+set "ADMIN_USERNAME=admin"
+set "ADMIN_PASSWORD="
+
+for /f "usebackq tokens=1,* delims==" %%A in ("%BACKEND_ENV%") do (
+    if /I "%%A"=="DEFAULT_ADMIN_USERNAME" set "ADMIN_USERNAME=%%B"
+    if /I "%%A"=="DEFAULT_ADMIN_PASSWORD" set "ADMIN_PASSWORD=%%B"
+)
+
+if not defined ADMIN_USERNAME set "ADMIN_USERNAME=admin"
+exit /b 0
+
+:sync_frontend_dev_env
+(
+    echo VITE_DEV_ADMIN_USERNAME=%ADMIN_USERNAME%
+    echo VITE_DEV_ADMIN_PASSWORD=%ADMIN_PASSWORD%
+) > "%FRONTEND_ENV_TEMP%"
+
+if exist "%FRONTEND_ENV_DEV%" (
+    for /f "usebackq delims=" %%L in ("%FRONTEND_ENV_DEV%") do (
+        set "LINE=%%L"
+        echo(!LINE!| findstr /B /I /C:"VITE_DEV_ADMIN_USERNAME=" /C:"VITE_DEV_ADMIN_PASSWORD=" >nul
+        if errorlevel 1 >> "%FRONTEND_ENV_TEMP%" echo(!LINE!
+    )
+)
+
+move /y "%FRONTEND_ENV_TEMP%" "%FRONTEND_ENV_DEV%" >nul
+if errorlevel 1 (
+    echo [ERROR] Failed to write frontend/.env.development.local.
+    exit /b 1
+)
+
+exit /b 0
