@@ -241,11 +241,10 @@ const SECTION_CONFIGS: SectionConfig[] = [
 ];
 
 function renderField(
-  sectionKey: SectionKey,
   itemName: number,
   fieldConfig: FieldConfig,
 ) {
-  const namePath = [sectionKey, "items", itemName, fieldConfig.key];
+  const namePath = [itemName, fieldConfig.key];
 
   if (fieldConfig.type === "textarea") {
     return (
@@ -339,11 +338,7 @@ const ProjectExternalResourceForm: React.FC = () => {
   };
 
   const handleCancel = () => {
-    if (projectId) {
-      navigate(`/projects/${projectId}`);
-      return;
-    }
-    navigate("/projects");
+    navigate(-1);
   };
 
   if (loading) {
@@ -489,7 +484,6 @@ const ProjectExternalResourceForm: React.FC = () => {
                                 md={fieldConfig.span ?? 12}
                               >
                                 {renderField(
-                                  section.key,
                                   field.name,
                                   fieldConfig,
                                 )}
