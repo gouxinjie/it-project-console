@@ -301,7 +301,7 @@ function SectionCard({
           <span>{descriptor.title}</span>
         </Space>
       }
-      bordered={false}
+      variant="borderless"
       style={{ height: "100%" }}
     >
       {section.items.length > 0 ? (
@@ -410,7 +410,7 @@ const ProjectDetail: React.FC = () => {
 
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <Card bordered={false}>
+      <Card variant="borderless">
         <div
           style={{
             display: "flex",
@@ -458,22 +458,22 @@ const ProjectDetail: React.FC = () => {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic title="负责人" value={project.project_leader_ids.length} prefix={<TeamOutlined />} />
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic title="资源条目" value={resourcesPayload.resources.length} prefix={<ApiOutlined />} />
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic title="结构化外部分类" value={structuredExternalSections.length} prefix={<CloudOutlined />} />
           </Card>
         </Col>
         <Col xs={24} md={6}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic
               title="预警项"
               value={warnings.length}
@@ -517,7 +517,7 @@ const ProjectDetail: React.FC = () => {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} xl={14}>
-          <Card title="基础信息" bordered={false}>
+          <Card title="基础信息" variant="borderless">
             <Descriptions bordered column={2}>
               <Descriptions.Item label="项目名称">{project.project_name}</Descriptions.Item>
               <Descriptions.Item label="项目类型">{project.project_type}</Descriptions.Item>
@@ -540,7 +540,7 @@ const ProjectDetail: React.FC = () => {
         </Col>
 
         <Col xs={24} xl={10}>
-          <Card title="资源覆盖情况" bordered={false}>
+          <Card title="资源覆盖情况" variant="borderless">
             <List
               split={false}
               dataSource={[
@@ -578,7 +578,7 @@ const ProjectDetail: React.FC = () => {
 
       <Card
         title="项目资源"
-        bordered={false}
+        variant="borderless"
         extra={
           <Button onClick={() => navigate(`/projects/${project.project_id}/resource/create`)}>
             添加资源
@@ -644,7 +644,7 @@ const ProjectDetail: React.FC = () => {
 
       <Card
         title="外部资源"
-        bordered={false}
+        variant="borderless"
         extra={
           <Button onClick={() => navigate(`/projects/${project.project_id}/external-resource/edit`)}>
             编辑外部资源

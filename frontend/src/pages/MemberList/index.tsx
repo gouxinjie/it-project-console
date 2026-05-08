@@ -237,13 +237,27 @@ const MemberList: React.FC = () => {
       title: "联系电话",
       dataIndex: "phone",
       key: "phone",
-      render: (value: string | null) => value || "-",
+      render: (value: string | null) =>
+        value ? (
+          <Text copyable={{ text: value }} style={{ color: "#475569" }}>
+            {value}
+          </Text>
+        ) : (
+          "-"
+        ),
     },
     {
       title: "邮箱",
       dataIndex: "email",
       key: "email",
-      render: (value: string | null) => value || "-",
+      render: (value: string | null) =>
+        value ? (
+          <Text copyable={{ text: value }} style={{ color: "#475569" }}>
+            {value}
+          </Text>
+        ) : (
+          "-"
+        ),
     },
     {
       title: "操作",
@@ -345,6 +359,7 @@ const MemberList: React.FC = () => {
             prefix={<SearchOutlined />}
             placeholder="搜索成员姓名"
             className="w-64"
+            style={{ borderRadius: 8 }}
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
             onPressEnter={() =>
@@ -353,13 +368,20 @@ const MemberList: React.FC = () => {
           />
           <Button
             type="primary"
+            icon={<SearchOutlined />}
             onClick={() =>
               void fetchMemberList({ ...pagination, current: 1 }, searchText)
             }
+            style={{ background: "#1e293b", borderColor: "#1e293b", borderRadius: 8 }}
           >
-            搜索
+            搜索项目成员
           </Button>
-          <Button icon={<PlusOutlined />} onClick={() => openEditModal()}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => openEditModal()}
+            style={{ background: "#10b981", borderColor: "#10b981", borderRadius: 8 }}
+          >
             新增成员
           </Button>
         </div>
@@ -396,27 +418,36 @@ const MemberList: React.FC = () => {
         open={isDetailOpen}
         onCancel={closeDetailModal}
         footer={null}
-        width={1100}
+        width={1000}
+        styles={{ body: { padding: "12px 20px 20px" } }}
       >
         <Spin spinning={detailLoading}>
           {selectedMember ? (
-            <Space direction="vertical" size={16} style={{ width: "100%" }}>
-              <Row gutter={[16, 16]}>
+            <Space direction="vertical" size={12} style={{ width: "100%" }}>
+              <Row gutter={[12, 12]}>
                 <Col span={12}>
-                  <Card bordered={false}>
-                    <Statistic title="负责项目数" value={detailCounts.leadProjects} />
+                  <Card variant="borderless" styles={{ body: { padding: "12px 16px" } }} className="bg-slate-50">
+                    <Statistic
+                      title={<span style={{ fontSize: 13 }}>负责项目数</span>}
+                      value={detailCounts.leadProjects}
+                      valueStyle={{ fontSize: 20, fontWeight: 700, color: "#3b82f6" }}
+                    />
                   </Card>
                 </Col>
                 <Col span={12}>
-                  <Card bordered={false}>
-                    <Statistic title="参与资源数" value={detailCounts.developedResources} />
+                  <Card variant="borderless" styles={{ body: { padding: "12px 16px" } }} className="bg-slate-50">
+                    <Statistic
+                      title={<span style={{ fontSize: 13 }}>参与资源数</span>}
+                      value={detailCounts.developedResources}
+                      valueStyle={{ fontSize: 20, fontWeight: 700, color: "#10b981" }}
+                    />
                   </Card>
                 </Col>
               </Row>
 
-              <Card bordered={false}>
-                <Title level={5}>成员信息</Title>
-                <Descriptions bordered column={2}>
+              <Card variant="borderless" styles={{ body: { padding: 0 } }}>
+                <Title level={5} style={{ marginBottom: 12, fontSize: 15 }}>成员信息</Title>
+                <Descriptions bordered column={2} size="small">
                   <Descriptions.Item label="姓名">
                     {memberDetail?.member_name || selectedMember.member_name}
                   </Descriptions.Item>
@@ -430,15 +461,15 @@ const MemberList: React.FC = () => {
                     {memberDetail?.email || selectedMember.email || "-"}
                   </Descriptions.Item>
                   <Descriptions.Item label="技术栈" span={2}>
-                    <Text style={{ whiteSpace: "pre-wrap" }}>
+                    <Text style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>
                       {memberDetail?.tech_stack || selectedMember.tech_stack || "-"}
                     </Text>
                   </Descriptions.Item>
                 </Descriptions>
               </Card>
 
-              <Card bordered={false}>
-                <Title level={5}>负责项目</Title>
+              <Card variant="borderless" styles={{ body: { padding: 0 } }}>
+                <Title level={5} style={{ marginBottom: 8, marginTop: 4, fontSize: 15 }}>负责项目</Title>
                 <Table<MemberLeadProjectSummary>
                   rowKey="project_id"
                   size="small"
@@ -449,8 +480,8 @@ const MemberList: React.FC = () => {
                 />
               </Card>
 
-              <Card bordered={false}>
-                <Title level={5}>参与资源</Title>
+              <Card variant="borderless" styles={{ body: { padding: 0 } }}>
+                <Title level={5} style={{ marginBottom: 8, marginTop: 4, fontSize: 15 }}>参与资源</Title>
                 <Table<MemberDevelopedResourceSummary>
                   rowKey="resource_id"
                   size="small"

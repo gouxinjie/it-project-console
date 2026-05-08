@@ -4,22 +4,24 @@
 }
 
 .header {
-    padding: 0 20px 0 0;
+    padding: 0 24px 0 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f1f5f9;
+    background: #ffffff;
     z-index: 1000;
     height: 64px;
     line-height: 64px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
 .logoArea {
     display: flex;
     align-items: center;
     padding-left: 24px;
-    transition: width 0.2s;
-    border-right: 1px solid #f0f0f0;
+    transition: width 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
+    border-right: 1px solid #f1f5f9;
     height: 100%;
     overflow: hidden;
 }
@@ -27,22 +29,25 @@
 .logoIcon {
     width: 32px;
     height: 32px;
-    background: #1677ff;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
     border-radius: 8px;
-    margin-right: 10px;
+    margin-right: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: 800;
     flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(30, 41, 59, 0.2);
 }
 
 .logoText {
     font-size: 18px;
-    font-weight: bold;
-    color: #1d2129;
+    font-weight: 700;
+    color: #1e293b;
     white-space: nowrap;
+    letter-spacing: -0.01em;
 }
 
 .headerRight {
@@ -52,20 +57,158 @@
     justify-content: space-between;
 }
 
-.userInfo {
-    cursor: pointer;
+.headerLeftAction {
     display: flex;
     align-items: center;
+}
+
+.welcomeContainer {
+    margin-left: 8px;
+    padding-left: 20px;
+    border-left: 1px solid #f1f5f9;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    animation: fadeIn 0.8s ease-out;
+}
+
+.welcomeText {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+
+    &::before {
+        content: '✨';
+        margin-right: 8px;
+        font-size: 12px;
+        opacity: 0.8;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.headerActions {
+    padding-right: 4px;
+}
+
+.utilityIcons {
+    margin-right: 8px;
+    border-right: 1px solid #f1f5f9;
+    padding-right: 20px;
+}
+
+.actionIcon {
+    color: #64748b !important;
+    font-size: 18px !important;
+    width: 38px !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+    transition: all 0.2s !important;
+
+    &:hover {
+        color: #1e293b !important;
+        background: #f1f5f9 !important;
+    }
+}
+
+.userInfo {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 12px;
+    transition: all 0.2s;
+    background: transparent;
+
+    &:hover {
+        background: #f8fafc;
+    }
+
+    .userMeta {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.2;
+        margin-left: 4px;
+    }
 
     .userName {
         font-size: 14px;
-        color: #4e5969;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .userRole {
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 500;
     }
 }
 
 .sider {
-    border-right: 1px solid #f0f0f0;
+    border-right: 1px solid #f0f2f5;
     height: calc(100vh - 64px);
+    transition: all 0.2s;
+
+    :global {
+        .ant-menu-root {
+            padding: 16px 12px !important;
+        }
+
+        .ant-menu-item {
+            height: 40px !important;
+            line-height: 40px !important;
+            border-radius: 8px !important;
+            margin-bottom: 4px !important;
+            width: 100% !important;
+            color: #64748b !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+
+            &:hover {
+                color: #1e293b !important;
+                background-color: #f8fafc !important;
+            }
+
+            &.ant-menu-item-selected {
+                background-color: #1e293b !important;
+                color: #ffffff !important;
+                box-shadow: 0 4px 12px rgba(30, 41, 59, 0.15);
+
+                .anticon {
+                    color: #ffffff !important;
+                }
+            }
+
+            .anticon {
+                font-size: 18px !important;
+                transition: transform 0.3s ease;
+            }
+
+            &:active {
+                background-color: #f1f5f9 !important;
+            }
+        }
+
+        // 折叠状态下的特殊处理
+        .ant-layout-sider-collapsed {
+            .ant-menu-item {
+                padding: 0 calc(50% - 18px) !important;
+                margin: 0 auto 8px !important;
+                width: 48px !important;
+            }
+        }
+    }
 }
 
 .contentWrapper {

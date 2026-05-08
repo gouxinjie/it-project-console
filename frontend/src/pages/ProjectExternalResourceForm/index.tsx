@@ -82,7 +82,7 @@ const SECTION_CONFIGS: SectionConfig[] = [
   {
     key: "aliyun_oss",
     title: "OSS / 对象存储",
-    description: "按资源条目维护 bucket、endpoint 和访问说明，适合多个环境并存。",
+    description: "按资源条目维度登记 bucket、endpoint 和访问说明，适合多个环境并存的情况。",
     addLabel: "添加 OSS 条目",
     fields: [
       { key: "name", label: "名称", placeholder: "如：项目主桶", span: 8 },
@@ -369,7 +369,7 @@ const ProjectExternalResourceForm: React.FC = () => {
           </Title>
         </Space>
       }
-      bordered={false}
+      variant="borderless"
       style={{ boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)" }}
     >
       <Form<StructuredExternalResourceFormValues>

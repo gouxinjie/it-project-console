@@ -175,7 +175,7 @@ const ProjectResourceForm: React.FC = () => {
           </Title>
         </Space>
       }
-      bordered={false}
+      variant="borderless"
       className="form-card"
       style={{ boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)" }}
     >
@@ -205,7 +205,7 @@ const ProjectResourceForm: React.FC = () => {
                 label="资源类型"
                 name="resource_type"
                 rules={[{ required: true, message: "请选择资源类型" }]}
-                tooltip="定义该资源所属的技术分类"
+                tooltip="定义该资源所属的技术分层"
                 style={{ marginBottom: 0 }}
               >
                 <Select

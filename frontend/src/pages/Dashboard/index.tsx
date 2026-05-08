@@ -149,61 +149,61 @@ const Dashboard: React.FC = () => {
       </div>
 
       <Row gutter={[20, 20]}>
-        <Col xs={24} sm={12} md={8} xl={4}>
-          <Card className={styles.statisticCard} style={{ background: "#ffffff" }}>
+        <Col xs={24} sm={12} md={8} style={{ flex: 1, minWidth: "200px" }}>
+          <Card className={`${styles.statisticCard} animate-card-in delay-1`}>
             <Statistic
               title="项目总数"
               value={stats.total}
-              valueStyle={{ color: "#1e293b" }}
-              prefix={<ProjectOutlined style={{ color: "#3b82f6" }} />}
+              valueStyle={{ color: "#3b82f6", fontWeight: 800 }}
+              prefix={<ProjectOutlined style={{ opacity: 0.8 }} />}
             />
             <ProjectOutlined className={styles.cardIcon} style={{ color: "#3b82f6" }} />
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={8} xl={4}>
-          <Card className={styles.statisticCard} style={{ background: "#ffffff" }}>
+        <Col xs={24} sm={12} md={8} style={{ flex: 1, minWidth: "200px" }}>
+          <Card className={`${styles.statisticCard} animate-card-in delay-2`}>
             <Statistic
               title="待启动"
               value={stats.byStatus[PROJECT_STATUS_OPTIONS[0]] || 0}
-              valueStyle={{ color: "#1e293b" }}
-              prefix={<ClockCircleOutlined style={{ color: "#8b5cf6" }} />}
+              valueStyle={{ color: "#8b5cf6", fontWeight: 800 }}
+              prefix={<ClockCircleOutlined style={{ opacity: 0.8 }} />}
             />
             <ClockCircleOutlined className={styles.cardIcon} style={{ color: "#8b5cf6" }} />
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={8} xl={4}>
-          <Card className={styles.statisticCard} style={{ background: "#ffffff" }}>
+        <Col xs={24} sm={12} md={8} style={{ flex: 1, minWidth: "200px" }}>
+          <Card className={`${styles.statisticCard} animate-card-in delay-3`}>
             <Statistic
               title="已上线"
               value={stats.byStatus[PROJECT_STATUS_OPTIONS[2]] || 0}
-              valueStyle={{ color: "#1e293b" }}
-              prefix={<RocketOutlined style={{ color: "#10b981" }} />}
+              valueStyle={{ color: "#10b981", fontWeight: 800 }}
+              prefix={<RocketOutlined style={{ opacity: 0.8 }} />}
             />
             <RocketOutlined className={styles.cardIcon} style={{ color: "#10b981" }} />
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={8} xl={4}>
-          <Card className={styles.statisticCard} style={{ background: "#ffffff" }}>
+        <Col xs={24} sm={12} md={8} style={{ flex: 1, minWidth: "200px" }}>
+          <Card className={`${styles.statisticCard} animate-card-in delay-4`}>
             <Statistic
               title="开发中"
               value={stats.byStatus[PROJECT_STATUS_OPTIONS[1]] || 0}
-              valueStyle={{ color: "#1e293b" }}
-              prefix={<SyncOutlined style={{ color: "#f59e0b" }} spin={(stats.byStatus[PROJECT_STATUS_OPTIONS[1]] || 0) > 0} />}
+              valueStyle={{ color: "#f59e0b", fontWeight: 800 }}
+              prefix={<SyncOutlined spin={(stats.byStatus[PROJECT_STATUS_OPTIONS[1]] || 0) > 0} style={{ opacity: 0.8 }} />}
             />
             <SyncOutlined className={styles.cardIcon} style={{ color: "#f59e0b" }} />
           </Card>
         </Col>
 
-        <Col xs={24} sm={12} md={8} xl={4}>
-          <Card className={styles.statisticCard} style={{ background: "#ffffff" }}>
+        <Col xs={24} sm={12} md={8} style={{ flex: 1, minWidth: "200px" }}>
+          <Card className={`${styles.statisticCard} animate-card-in delay-5`}>
             <Statistic
               title="已下线"
               value={stats.byStatus[PROJECT_STATUS_OPTIONS[3]] || 0}
-              valueStyle={{ color: "#1e293b" }}
-              prefix={<ToolOutlined style={{ color: "#64748b" }} />}
+              valueStyle={{ color: "#64748b", fontWeight: 800 }}
+              prefix={<ToolOutlined style={{ opacity: 0.8 }} />}
             />
             <ToolOutlined className={styles.cardIcon} style={{ color: "#64748b" }} />
           </Card>

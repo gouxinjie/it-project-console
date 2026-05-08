@@ -1,15 +1,31 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Avatar, Breadcrumb, Button, Dropdown, Layout, Menu, Space, theme } from "antd";
 import {
+  Avatar,
+  Badge,
+  Breadcrumb,
+  Button,
+  Dropdown,
+  Input,
+  Layout,
+  Menu,
+  Space,
+  Tooltip,
+  theme,
+} from "antd";
+import {
+  BellOutlined,
   DashboardOutlined,
   HomeOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ProjectOutlined,
+  QuestionCircleOutlined,
+  SearchOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 import { clearAuthRelatedCaches } from "@/services/auth";
 import { prefetchMembers } from "@/services/member";
@@ -61,6 +77,15 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   const currentUsername = localStorage.getItem("username") || "管理员";
+
+  const welcomeMessage = useMemo(() => {
+    const hour = dayjs().hour();
+    if (hour < 9) return "早安，开启活力满满的一天";
+    if (hour < 12) return "上午好，专注当下工作";
+    if (hour < 14) return "午安，记得休息一下";
+    if (hour < 18) return "下午好，保持高效节奏";
+    return "晚上好，辛苦了，早点休息";
+  }, []);
 
   const currentMenuKey = useMemo(
     () => menuItems.find((item) => location.pathname.startsWith(item.key))?.key,
@@ -135,22 +160,41 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         </div>
 
         <div className={styles.headerRight}>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed((value) => !value)}
-            style={{ fontSize: 16, width: 64, height: 64 }}
-          />
+          <div className={styles.headerLeftAction}>
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={() => setCollapsed((value) => !value)}
+              style={{ fontSize: 16, width: 64, height: 64 }}
+            />
+            <div className={styles.welcomeContainer}>
+              <span className={styles.welcomeText}>{welcomeMessage}</span>
+            </div>
+          </div>
 
-          <Space size={20}>
+          <Space size={20} className={styles.headerActions}>
+            <Space size={16} className={styles.utilityIcons}>
+              <Tooltip title="通知">
+                <Badge dot offset={[-2, 4]} color="#ef4444">
+                  <Button type="text" icon={<BellOutlined />} className={styles.actionIcon} />
+                </Badge>
+              </Tooltip>
+              <Tooltip title="帮助文档">
+                <Button type="text" icon={<QuestionCircleOutlined />} className={styles.actionIcon} />
+              </Tooltip>
+            </Space>
+
             <Dropdown menu={{ items: userMenuItems }}>
               <Space className={styles.userInfo}>
                 <Avatar
-                  size="small"
+                  size={32}
                   icon={<UserOutlined />}
-                  style={{ backgroundColor: "#1677ff" }}
+                  style={{ backgroundColor: "#1e293b", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
                 />
-                <span className={styles.userName}>{currentUsername}</span>
+                <div className={styles.userMeta}>
+                  <span className={styles.userName}>{currentUsername}</span>
+                  <span className={styles.userRole}>管理员</span>
+                </div>
               </Space>
             </Dropdown>
           </Space>
@@ -170,14 +214,18 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             selectedKeys={currentMenuKey ? [currentMenuKey] : []}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
-            style={{ borderRight: 0, padding: "16px 0" }}
+            style={{ borderRight: 0 }}
           />
         </Sider>
         <Layout className={styles.contentWrapper}>
           <div className={styles.breadcrumbArea}>
             <Breadcrumb items={breadcrumbItems} />
           </div>
-          <Content className={styles.mainContent}>{children}</Content>
+          <Content className={styles.mainContent}>
+            <div className="page-transition-enter" key={location.pathname}>
+              {children}
+            </div>
+          </Content>
         </Layout>
       </Layout>
     </Layout>

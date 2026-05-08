@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-d
 import { ConfigProvider, Spin } from "antd";
 import zhCN from "antd/locale/zh_CN";
 
+import MainLayout from "@/components/MainLayout";
 import { getCurrentUser } from "@/services/auth";
 import "@/index.css";
 
@@ -16,20 +17,38 @@ const ProjectExternalResourceForm = lazy(
   () => import("@/pages/ProjectExternalResourceForm"),
 );
 const MemberList = lazy(() => import("@/pages/MemberList"));
-const MainLayout = lazy(() => import("@/components/MainLayout"));
 
-const RouteLoading = ({ fullscreen = false }: { fullscreen?: boolean }) => (
-  <div
-    style={{
-      minHeight: fullscreen ? "100vh" : "240px",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}
-  >
-    <Spin size="large" />
-  </div>
-);
+// 预加载核心页面，减少首次切换时的闪烁
+const preloadCommonPages = () => {
+  void import("@/pages/Dashboard");
+  void import("@/pages/ProjectList");
+  void import("@/pages/MemberList");
+};
+
+const RouteLoading = ({ fullscreen = false }: { fullscreen?: boolean }) => {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShow(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <div
+      style={{
+        minHeight: fullscreen ? "100vh" : "240px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        animation: "fadeIn 0.3s ease-in",
+      }}
+    >
+      <Spin size="large" />
+    </div>
+  );
+};
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [isChecking, setIsChecking] = useState(true);
@@ -50,6 +69,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           return;
         }
         setIsAuthenticated(true);
+        preloadCommonPages();
       })
       .catch(() => {
         if (!isMounted) {
@@ -82,8 +102,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PrivateApp: React.FC = () => (
-  <Suspense fallback={<RouteLoading />}>
-    <MainLayout>
+  <MainLayout>
+    <Suspense fallback={<RouteLoading />}>
       <Routes>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<ProjectList />} />
@@ -105,8 +125,8 @@ const PrivateApp: React.FC = () => (
         <Route path="/members" element={<MemberList />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </MainLayout>
-  </Suspense>
+    </Suspense>
+  </MainLayout>
 );
 
 const App: React.FC = () => {
