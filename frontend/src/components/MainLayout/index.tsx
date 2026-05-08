@@ -5,57 +5,56 @@ import {
   Breadcrumb,
   Button,
   Dropdown,
+  Form,
   Input,
   Layout,
   Menu,
+  Modal,
   Space,
   Tooltip,
+  message,
   theme,
 } from "antd";
 import {
   BellOutlined,
   DashboardOutlined,
   HomeOutlined,
+  LockOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ProjectOutlined,
   QuestionCircleOutlined,
-  SearchOutlined,
+  SafetyCertificateOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 
-import { clearAuthRelatedCaches } from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
 import { prefetchMembers } from "@/services/member";
 import { prefetchProjects } from "@/services/project";
+import { updateMyPassword } from "@/services/user";
 import styles from "./index.module.scss";
 
 const { Header, Sider, Content } = Layout;
 
-const menuItems = [
-  {
-    key: "/dashboard",
-    icon: <DashboardOutlined />,
-    label: "仪表盘",
-  },
-  {
-    key: "/projects",
-    icon: <ProjectOutlined />,
-    label: "项目列表",
-  },
-  {
-    key: "/members",
-    icon: <UserOutlined />,
-    label: "项目成员",
-  },
-];
+const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/;
+
+interface PasswordFormValues {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { currentUser, logout } = useAuth();
+  const [passwordForm] = Form.useForm<PasswordFormValues>();
   const {
     token: { colorBgContainer },
   } = theme.useToken();
@@ -69,37 +68,49 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return () => window.clearTimeout(timer);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    clearAuthRelatedCaches();
-    navigate("/login");
-  };
+  const menuItems = useMemo(() => {
+    const baseItems = [
+      {
+        key: "/dashboard",
+        icon: <DashboardOutlined />,
+        label: "仪表盘",
+      },
+      {
+        key: "/projects",
+        icon: <ProjectOutlined />,
+        label: "项目列表",
+      },
+      {
+        key: "/members",
+        icon: <UserOutlined />,
+        label: "项目成员",
+      },
+    ];
 
-  const currentUsername = localStorage.getItem("username") || "管理员";
+    if (currentUser?.is_superuser) {
+      baseItems.push({
+        key: "/users",
+        icon: <SafetyCertificateOutlined />,
+        label: "账号管理",
+      });
+    }
 
-  const welcomeMessage = useMemo(() => {
-    const hour = dayjs().hour();
-    if (hour < 9) return "早安，开启活力满满的一天";
-    if (hour < 12) return "上午好，专注当下工作";
-    if (hour < 14) return "午安，记得休息一下";
-    if (hour < 18) return "下午好，保持高效节奏";
-    return "晚上好，辛苦了，早点休息";
-  }, []);
+    return baseItems;
+  }, [currentUser?.is_superuser]);
 
   const currentMenuKey = useMemo(
     () => menuItems.find((item) => location.pathname.startsWith(item.key))?.key,
-    [location.pathname],
+    [location.pathname, menuItems],
   );
 
-  const userMenuItems = [
-    {
-      key: "logout",
-      icon: <LogoutOutlined />,
-      label: "退出登录",
-      onClick: handleLogout,
-    },
-  ];
+  const welcomeMessage = useMemo(() => {
+    const hour = dayjs().hour();
+    if (hour < 9) return "早安，开始处理今天的交付事项";
+    if (hour < 12) return "上午好，保持当前推进节奏";
+    if (hour < 14) return "午安，注意留出检查时间";
+    if (hour < 18) return "下午好，继续完成关键收口";
+    return "晚上好，辛苦了";
+  }, []);
 
   const breadcrumbItems = useMemo(() => {
     const items: Array<{ title: React.ReactNode }> = [
@@ -130,10 +141,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (location.pathname.includes("/projects/")) {
       if (location.pathname.includes("/resource/")) {
         items.push({ title: "资源管理" });
-        if (
-          location.pathname.endsWith("/edit")
-          || location.pathname.includes("/create")
-        ) {
+        if (location.pathname.endsWith("/edit") || location.pathname.includes("/create")) {
           items.push({ title: "表单配置" });
         }
       } else if (location.pathname.includes("/external-resource/")) {
@@ -149,14 +157,44 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
 
     return items;
-  }, [currentMenuKey, location.pathname]);
+  }, [currentMenuKey, location.pathname, menuItems]);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
+  };
+
+  const handlePasswordSubmit = async () => {
+    try {
+      const values = await passwordForm.validateFields();
+      setIsSubmittingPassword(true);
+      await updateMyPassword({
+        current_password: values.current_password,
+        new_password: values.new_password,
+      });
+      message.success("密码已更新");
+      setIsPasswordModalOpen(false);
+      passwordForm.resetFields();
+    } catch (error) {
+      const formError = error as { errorFields?: unknown[]; response?: { data?: { detail?: string } } };
+      if (formError.errorFields) {
+        return;
+      }
+      message.error(formError.response?.data?.detail || "修改密码失败");
+    } finally {
+      setIsSubmittingPassword(false);
+    }
+  };
+
+  const username = currentUser?.username ?? "admin";
+  const roleLabel = currentUser?.is_superuser ? "管理员" : "普通用户";
 
   return (
     <Layout className={styles.layoutContainer}>
       <Header className={styles.header} style={{ background: colorBgContainer }}>
         <div className={styles.logoArea} style={{ width: collapsed ? 80 : 220 }}>
           <div className={styles.logoIcon}>IT</div>
-          {!collapsed && <span className={styles.logoText}>IT-Project</span>}
+          {!collapsed ? <span className={styles.logoText}>IT-Project</span> : null}
         </div>
 
         <div className={styles.headerRight}>
@@ -184,7 +222,32 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </Tooltip>
             </Space>
 
-            <Dropdown menu={{ items: userMenuItems }}>
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: "password",
+                    icon: <LockOutlined />,
+                    label: "修改密码",
+                  },
+                  {
+                    key: "logout",
+                    icon: <LogoutOutlined />,
+                    label: "退出登录",
+                  },
+                ],
+                onClick: ({ key }) => {
+                  if (key === "password") {
+                    passwordForm.resetFields();
+                    setIsPasswordModalOpen(true);
+                    return;
+                  }
+                  if (key === "logout") {
+                    handleLogout();
+                  }
+                },
+              }}
+            >
               <Space className={styles.userInfo}>
                 <Avatar
                   size={32}
@@ -192,14 +255,15 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   style={{ backgroundColor: "#1e293b", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }}
                 />
                 <div className={styles.userMeta}>
-                  <span className={styles.userName}>{currentUsername}</span>
-                  <span className={styles.userRole}>管理员</span>
+                  <span className={styles.userName}>{username}</span>
+                  <span className={styles.userRole}>{roleLabel}</span>
                 </div>
               </Space>
             </Dropdown>
           </Space>
         </div>
       </Header>
+
       <Layout>
         <Sider
           trigger={null}
@@ -217,6 +281,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             style={{ borderRight: 0 }}
           />
         </Sider>
+
         <Layout className={styles.contentWrapper}>
           <div className={styles.breadcrumbArea}>
             <Breadcrumb items={breadcrumbItems} />
@@ -228,6 +293,63 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </Content>
         </Layout>
       </Layout>
+
+      <Modal
+        title="修改密码"
+        open={isPasswordModalOpen}
+        onOk={handlePasswordSubmit}
+        okText="保存"
+        cancelText="取消"
+        confirmLoading={isSubmittingPassword}
+        onCancel={() => {
+          setIsPasswordModalOpen(false);
+          passwordForm.resetFields();
+        }}
+        destroyOnClose
+      >
+        <Form form={passwordForm} layout="vertical" requiredMark={false}>
+          <Form.Item
+            label="当前密码"
+            name="current_password"
+            rules={[{ required: true, message: "请输入当前密码" }]}
+          >
+            <Input.Password placeholder="请输入当前密码" />
+          </Form.Item>
+          <Form.Item
+            label="新密码"
+            name="new_password"
+            rules={[
+              { required: true, message: "请输入新密码" },
+              { min: 6, message: "密码至少 6 位" },
+              {
+                pattern: passwordPattern,
+                message: "密码需包含字母和数字，且仅支持字母数字",
+              },
+            ]}
+            extra="密码需至少 6 位，并包含字母和数字，且仅支持字母数字。"
+          >
+            <Input.Password placeholder="请输入新密码" />
+          </Form.Item>
+          <Form.Item
+            label="确认新密码"
+            name="confirm_password"
+            dependencies={["new_password"]}
+            rules={[
+              { required: true, message: "请再次输入新密码" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("new_password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error("两次输入的密码不一致"));
+                },
+              }),
+            ]}
+          >
+            <Input.Password placeholder="请再次输入新密码" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Layout>
   );
 };

@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, validate_password_strength
 from app.models.member import ProjectMember
 from app.models.project import ProjectBase, ProjectResource
 from app.models.user import User
@@ -12,15 +12,30 @@ from app.models.user import User
 PLACEHOLDER_MEMBER_POSITION = "待补充"
 
 
+def _get_bootstrap_admin_password() -> str:
+    password = settings.DEFAULT_ADMIN_PASSWORD.strip()
+    if not password:
+        raise RuntimeError(
+            "DEFAULT_ADMIN_PASSWORD must be set before creating the default admin account",
+        )
+    try:
+        return validate_password_strength(password)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"DEFAULT_ADMIN_PASSWORD is invalid: {exc}",
+        ) from exc
+
+
 def ensure_default_admin(db: Session) -> User:
     admin = db.query(User).filter(User.username == settings.DEFAULT_ADMIN_USERNAME).first()
     if admin:
         return admin
 
+    bootstrap_password = _get_bootstrap_admin_password()
     admin = User(
         username=settings.DEFAULT_ADMIN_USERNAME,
         email=settings.DEFAULT_ADMIN_EMAIL,
-        hashed_password=get_password_hash(settings.DEFAULT_ADMIN_PASSWORD),
+        hashed_password=get_password_hash(bootstrap_password),
         is_active=True,
         is_superuser=True,
     )

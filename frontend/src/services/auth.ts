@@ -4,10 +4,13 @@ import {
   fetchWithCache,
   invalidateCacheByPrefix,
 } from "@/utils/cache";
+import type { AuthSettings, User, UserRegisterPayload } from "@/types/user";
 import request from "@/utils/request";
 
 const CURRENT_USER_CACHE_PREFIX = "auth:current-user";
+const AUTH_SETTINGS_CACHE_PREFIX = "auth:settings";
 const CURRENT_USER_CACHE_TTL_MS = 5 * 60_000;
+const AUTH_SETTINGS_CACHE_TTL_MS = 5 * 60_000;
 
 export interface LoginPayload {
   username: string;
@@ -19,16 +22,12 @@ export interface LoginResponse {
   token_type: string;
 }
 
-export interface CurrentUser {
-  id: number;
-  username: string;
-  email: string | null;
-  is_active: boolean;
-  is_superuser: boolean;
+function requestCurrentUser(): Promise<User> {
+  return request.get<User>("/login/me");
 }
 
-function requestCurrentUser(): Promise<CurrentUser> {
-  return request.get<CurrentUser>("/login/me");
+function requestAuthSettings(): Promise<AuthSettings> {
+  return request.get<AuthSettings>("/login/settings");
 }
 
 export async function login(data: LoginPayload): Promise<LoginResponse> {
@@ -50,17 +49,28 @@ export async function login(data: LoginPayload): Promise<LoginResponse> {
   return response;
 }
 
-export async function register(data: Record<string, unknown>) {
-  return request.post("/login/register", data);
+export async function register(data: UserRegisterPayload): Promise<User> {
+  const response = await request.post<User, UserRegisterPayload>("/login/register", data);
+  invalidateCacheByPrefix(AUTH_SETTINGS_CACHE_PREFIX);
+  return response;
 }
 
-export async function getCurrentUser(): Promise<CurrentUser> {
+export async function getCurrentUser(): Promise<User> {
   const token = localStorage.getItem("token") ?? "guest";
   const cacheKey = createCacheKey(CURRENT_USER_CACHE_PREFIX, { token });
   return fetchWithCache(
     cacheKey,
     () => requestCurrentUser(),
     CURRENT_USER_CACHE_TTL_MS,
+  );
+}
+
+export async function getAuthSettings(): Promise<AuthSettings> {
+  const cacheKey = createCacheKey(AUTH_SETTINGS_CACHE_PREFIX);
+  return fetchWithCache(
+    cacheKey,
+    requestAuthSettings,
+    AUTH_SETTINGS_CACHE_TTL_MS,
   );
 }
 

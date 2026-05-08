@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 2  # 2 hours
+    ALLOW_PUBLIC_REGISTRATION: bool = False
+    SECURE_TRANSPORT_REQUIRED: bool = True
+    TRUST_X_FORWARDED_PROTO: bool = False
 
     # 数据库配置
     MYSQL_USER: str = "root"
@@ -27,9 +30,8 @@ class Settings(BaseSettings):
     ]
 
     DEFAULT_ADMIN_USERNAME: str = "admin"
-    DEFAULT_ADMIN_PASSWORD: str = "admin123!@#"
+    DEFAULT_ADMIN_PASSWORD: str = ""
     DEFAULT_ADMIN_EMAIL: str = "admin@proman.com"
-    ENABLE_DEBUG_ADMIN_LOGIN: bool = True
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod

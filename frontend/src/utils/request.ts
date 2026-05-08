@@ -30,7 +30,6 @@ client.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
-      localStorage.removeItem("username");
       clearCacheStore();
       if (window.location.pathname !== "/login") {
         window.location.replace("/login");

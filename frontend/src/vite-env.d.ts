@@ -2,7 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string;
-  // 更多环境变量...
+  readonly VITE_DEV_ADMIN_USERNAME?: string;
+  readonly VITE_DEV_ADMIN_PASSWORD?: string;
 }
 
 interface ImportMeta {
