@@ -16,43 +16,19 @@ import {
   ThunderboltOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { getAuthSettings, login, register } from "@/services/auth";
 import type { UserRegisterPayload } from "@/types/user";
+import { resolveAuthRedirectPath } from "@/utils/authRedirect";
 import styles from "./index.module.scss";
 
 const { Title, Text } = Typography;
 
 const devAdminUsername = import.meta.env.VITE_DEV_ADMIN_USERNAME ?? "admin";
 const devAdminPassword = import.meta.env.VITE_DEV_ADMIN_PASSWORD ?? "";
-
-const loginInitialValues = {
-  remember: true,
-  username: devAdminUsername,
-  password: devAdminPassword,
-};
-
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/;
-
-const capabilityCards = [
-  {
-    icon: <DeploymentUnitOutlined />,
-    title: "项目资产一屏收口",
-    description: "从项目类型、负责人到部署和资源配置，建立统一的工作台视图。",
-  },
-  {
-    icon: <BarChartOutlined />,
-    title: "状态变化更易感知",
-    description: "通过清晰的结构和数据视图，快速定位当前项目阶段与责任边界。",
-  },
-  {
-    icon: <ThunderboltOutlined />,
-    title: "更适合内部协作",
-    description: "适合日常维护、交接巡检和多人协同场景，比散落文档更稳定。",
-  },
-];
 
 interface LoginFormValues {
   username: string;
@@ -62,14 +38,53 @@ interface LoginFormValues {
   remember?: boolean;
 }
 
+const loginInitialValues: LoginFormValues = {
+  remember: true,
+  username: devAdminUsername,
+  password: devAdminPassword,
+};
+
+const capabilityCards = [
+  {
+    icon: <DeploymentUnitOutlined />,
+    title: "项目资产统一收口",
+    description: "从项目类型、负责人到部署与资源配置，建立统一工作台视图。",
+  },
+  {
+    icon: <BarChartOutlined />,
+    title: "关键状态更易感知",
+    description: "通过更清晰的结构和数据视图，快速定位当前项目阶段与责任边界。",
+  },
+  {
+    icon: <ThunderboltOutlined />,
+    title: "更适合内部协作",
+    description: "适合日常维护、交接巡检和多人协同场景，比散落文档更稳定。",
+  },
+];
+
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setAuthenticatedToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [allowPublicRegistration, setAllowPublicRegistration] = useState(false);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [form] = Form.useForm<LoginFormValues>();
+
+  const shouldWarnTransport = useMemo(() => {
+    const isLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    return !isLocalhost && window.location.protocol !== "https:";
+  }, []);
+
+  const redirectPath = useMemo(
+    () =>
+      resolveAuthRedirectPath({
+        state: location.state,
+        search: location.search,
+      }),
+    [location.search, location.state],
+  );
 
   useEffect(() => {
     let active = true;
@@ -79,12 +94,14 @@ const Login: React.FC = () => {
         if (!active) {
           return;
         }
+
         setAllowPublicRegistration(settings.allow_public_registration);
       })
       .catch(() => {
         if (!active) {
           return;
         }
+
         setAllowPublicRegistration(false);
       })
       .finally(() => {
@@ -104,11 +121,6 @@ const Login: React.FC = () => {
       form.setFieldsValue(loginInitialValues);
     }
   }, [allowPublicRegistration, form, isRegister]);
-
-  const shouldWarnTransport = useMemo(() => {
-    const isLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-    return !isLocalhost && window.location.protocol !== "https:";
-  }, []);
 
   const toggleMode = () => {
     if (!allowPublicRegistration) {
@@ -143,6 +155,7 @@ const Login: React.FC = () => {
           email: values.email?.trim() ?? "",
           password: values.password,
         };
+
         await register(payload);
         message.success("注册成功，请使用新账号登录");
         setIsRegister(false);
@@ -154,16 +167,28 @@ const Login: React.FC = () => {
         username: values.username.trim(),
         password: values.password,
       });
-      await setAuthenticatedToken(response.access_token);
+
+      await setAuthenticatedToken(response.access_token, {
+        remember: values.remember,
+      });
       message.success("登录成功");
-      navigate("/dashboard", { replace: true });
+      navigate(redirectPath, { replace: true });
     } catch (error) {
       const requestError = error as { response?: { data?: { detail?: string } } };
-      message.error(requestError.response?.data?.detail || (isRegister ? "注册失败" : "登录失败"));
+      message.error(
+        requestError.response?.data?.detail || (isRegister ? "注册失败" : "登录失败"),
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  const headerTitle = isRegister ? "创建控制台账号" : "进入项目控制台";
+  const headerDescription = isRegister
+    ? "注册完成后即可登录并进入工作区。"
+    : devAdminPassword
+      ? "当前为本地开发模式，管理员账号和默认初始化密码已直接显示。"
+      : "管理员用户名 admin 已预填，请输入对应密码后登录。";
 
   return (
     <div className={styles.loginContainer}>
@@ -175,7 +200,7 @@ const Login: React.FC = () => {
               让项目管理不止于记录，而是可协同、可追踪、可交付。
             </h1>
             <p className={styles.brandLead}>
-              IT-Project-Console 以更清晰的视图收口项目、资源、成员和关键外部依赖，
+              IT-Project-Console 用更清晰的视图收口项目、资源、成员和关键外部依赖，
               适合企业内部长期沉淀和跨团队交接。
             </p>
 
@@ -227,26 +252,9 @@ const Login: React.FC = () => {
                 <span className={styles.headerTag}>
                   {isRegister ? "Create Workspace Access" : "Workspace Sign In"}
                 </span>
-                <Title level={2}>
-                  {isRegister ? "创建控制台账号" : "进入项目控制台"}
-                </Title>
-                <Text type="secondary">
-                  {isRegister
-                    ? "注册完成后即可登录并进入工作区。"
-                    : devAdminPassword
-                      ? "当前为本地开发模式，管理员账号和默认初始化密码已直接显示。"
-                      : "管理员用户名 admin 已预填，请输入对应密码后登录。"}
-                </Text>
+                <Title level={2}>{headerTitle}</Title>
+                <Text type="secondary">{headerDescription}</Text>
               </div>
-
-              {/* {!isRegister && devAdminPassword ? (
-                <Alert
-                  type="info"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                  message="当前显示的是本地开发用的默认管理员初始化密码；如果该管理员账号已存在且密码被修改，请以数据库当前密码为准。"
-                />
-              ) : null} */}
 
               {shouldWarnTransport ? (
                 <Alert
@@ -320,7 +328,11 @@ const Login: React.FC = () => {
                         ]
                       : []),
                   ]}
-                  extra={isRegister ? "密码需至少 6 位，并包含字母和数字，且仅支持字母数字。" : undefined}
+                  extra={
+                    isRegister
+                      ? "密码需至少 6 位，并包含字母和数字，且仅支持字母数字。"
+                      : undefined
+                  }
                 >
                   <Input.Password
                     prefix={<LockOutlined className={styles.inputIcon} />}
@@ -341,6 +353,7 @@ const Login: React.FC = () => {
                           if (!value || getFieldValue("password") === value) {
                             return Promise.resolve();
                           }
+
                           return Promise.reject(new Error("两次输入的密码不一致"));
                         },
                       }),

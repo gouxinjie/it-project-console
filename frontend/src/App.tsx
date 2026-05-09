@@ -1,10 +1,17 @@
-import React, { Suspense, lazy, useEffect, useState } from "react";
-import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
+import React, { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import {
+  BrowserRouter as Router,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import { ConfigProvider, Spin } from "antd";
 import zhCN from "antd/locale/zh_CN";
 
 import MainLayout from "@/components/MainLayout";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { resolveAuthRedirectPath } from "@/utils/authRedirect";
 import "@/index.css";
 
 const Login = lazy(() => import("@/pages/Login"));
@@ -19,33 +26,27 @@ const ProjectExternalResourceForm = lazy(
 const MemberList = lazy(() => import("@/pages/MemberList"));
 const UserList = lazy(() => import("@/pages/UserList"));
 
-/**
- * 预加载常用页面
- * 提升用户点击导航时的响应速度
- */
 const preloadCommonPages = (isSuperuser: boolean) => {
   void import("@/pages/Dashboard");
   void import("@/pages/ProjectList");
   void import("@/pages/MemberList");
+
   if (isSuperuser) {
     void import("@/pages/UserList");
   }
 };
 
-/**
- * 全局加载指示器
- * 在 Suspense 懒加载过程中显示
- */
 const RouteLoading = ({ fullscreen = false }: { fullscreen?: boolean }) => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    // 延迟 300ms 显示，避免在极快加载时闪烁
     const timer = setTimeout(() => setShow(true), 300);
     return () => clearTimeout(timer);
   }, []);
 
-  if (!show) return null;
+  if (!show) {
+    return null;
+  }
 
   return (
     <div
@@ -62,12 +63,9 @@ const RouteLoading = ({ fullscreen = false }: { fullscreen?: boolean }) => {
   );
 };
 
-/**
- * 受保护路由组件
- * 逻辑：未登录用户访问受保护路径时重定向至登录页
- */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, isLoading } = useAuth();
+  const location = useLocation();
 
   useEffect(() => {
     if (currentUser) {
@@ -80,16 +78,35 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!currentUser) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;
 };
 
-/**
- * 管理员专用路由组件
- * 逻辑：仅允许超级管理员访问，否则重定向至仪表盘
- */
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { currentUser, isLoading } = useAuth();
+  const location = useLocation();
+  const redirectPath = useMemo(
+    () =>
+      resolveAuthRedirectPath({
+        state: location.state,
+        search: location.search,
+      }),
+    [location.search, location.state],
+  );
+
+  if (isLoading) {
+    return <RouteLoading fullscreen />;
+  }
+
+  if (currentUser) {
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, isLoading } = useAuth();
 
@@ -104,10 +121,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-/**
- * 内部业务逻辑路由
- * 包装在 MainLayout 中，通过 Suspense 进行代码分割和按需加载
- */
 const PrivateApp: React.FC = () => (
   <MainLayout>
     <Suspense fallback={<RouteLoading />}>
@@ -144,18 +157,17 @@ const PrivateApp: React.FC = () => (
   </MainLayout>
 );
 
-/**
- * 根路由配置
- */
 const AppRoutes: React.FC = () => (
   <Router>
     <Routes>
       <Route
         path="/login"
         element={(
-          <Suspense fallback={<RouteLoading fullscreen />}>
-            <Login />
-          </Suspense>
+          <PublicRoute>
+            <Suspense fallback={<RouteLoading fullscreen />}>
+              <Login />
+            </Suspense>
+          </PublicRoute>
         )}
       />
       <Route
@@ -170,10 +182,6 @@ const AppRoutes: React.FC = () => (
   </Router>
 );
 
-/**
- * 应用入口组件
- * 提供 Ant Design 配置、身份验证上下文和路由系统
- */
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={zhCN}>
