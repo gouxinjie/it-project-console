@@ -25,6 +25,9 @@ echarts.use([PieChart, TooltipComponent, LegendComponent, CanvasRenderer]);
 
 const { Title, Text } = Typography;
 
+/**
+ * 格式化成员名称列表
+ */
 function formatMemberNames(members: Array<{ member_name: string }> | undefined): string {
   if (!members || members.length === 0) {
     return "-";
@@ -32,6 +35,7 @@ function formatMemberNames(members: Array<{ member_name: string }> | undefined):
   return members.map((member) => member.member_name).join("、");
 }
 
+// 仪表盘状态卡片颜色配置
 const DASHBOARD_STATUS_CONFIG: Record<string, { color: string; label: string }> = {
   [PROJECT_STATUS_OPTIONS[0]]: { color: "#8b5cf6", label: PROJECT_STATUS_OPTIONS[0] },
   [PROJECT_STATUS_OPTIONS[1]]: { color: "#f59e0b", label: PROJECT_STATUS_OPTIONS[1] },
@@ -39,11 +43,16 @@ const DASHBOARD_STATUS_CONFIG: Record<string, { color: string; label: string }> 
   [PROJECT_STATUS_OPTIONS[3]]: { color: "#64748b", label: PROJECT_STATUS_OPTIONS[3] }
 };
 
+/**
+ * 仪表盘页面组件
+ * 展示项目统计指标、项目类型分布图表以及最近更新的项目列表
+ */
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
 
+  // 页面挂载时拉取所有项目数据
   useEffect(() => {
     void fetchData();
   }, []);
@@ -61,13 +70,19 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  /**
+   * 聚合统计数据
+   * 包含：总数、各状态计数、类型分布数据、最近更新项目
+   */
   const stats = useMemo(() => {
     const total = projectList.length;
+    // 按状态统计
     const byStatus = PROJECT_STATUS_OPTIONS.reduce<Record<string, number>>((accumulator, status) => {
       accumulator[status] = projectList.filter((project) => project.project_status === status).length;
       return accumulator;
     }, {});
 
+    // 按类型统计（饼图数据）
     const typeMap: Record<string, number> = {};
     projectList.forEach((project) => {
       typeMap[project.project_type] = (typeMap[project.project_type] || 0) + 1;
@@ -77,6 +92,7 @@ const Dashboard: React.FC = () => {
       value
     }));
 
+    // 获取最近更新的5个项目
     const recentProjects = [...projectList].sort((left, right) => dayjs(right.update_time).unix() - dayjs(left.update_time).unix()).slice(0, 5);
 
     return { total, byStatus, typeData, recentProjects };

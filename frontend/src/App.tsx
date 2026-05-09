@@ -19,6 +19,10 @@ const ProjectExternalResourceForm = lazy(
 const MemberList = lazy(() => import("@/pages/MemberList"));
 const UserList = lazy(() => import("@/pages/UserList"));
 
+/**
+ * 预加载常用页面
+ * 提升用户点击导航时的响应速度
+ */
 const preloadCommonPages = (isSuperuser: boolean) => {
   void import("@/pages/Dashboard");
   void import("@/pages/ProjectList");
@@ -28,10 +32,15 @@ const preloadCommonPages = (isSuperuser: boolean) => {
   }
 };
 
+/**
+ * 全局加载指示器
+ * 在 Suspense 懒加载过程中显示
+ */
 const RouteLoading = ({ fullscreen = false }: { fullscreen?: boolean }) => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    // 延迟 300ms 显示，避免在极快加载时闪烁
     const timer = setTimeout(() => setShow(true), 300);
     return () => clearTimeout(timer);
   }, []);
@@ -53,6 +62,10 @@ const RouteLoading = ({ fullscreen = false }: { fullscreen?: boolean }) => {
   );
 };
 
+/**
+ * 受保护路由组件
+ * 逻辑：未登录用户访问受保护路径时重定向至登录页
+ */
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, isLoading } = useAuth();
 
@@ -73,6 +86,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+/**
+ * 管理员专用路由组件
+ * 逻辑：仅允许超级管理员访问，否则重定向至仪表盘
+ */
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, isLoading } = useAuth();
 
@@ -87,6 +104,10 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+/**
+ * 内部业务逻辑路由
+ * 包装在 MainLayout 中，通过 Suspense 进行代码分割和按需加载
+ */
 const PrivateApp: React.FC = () => (
   <MainLayout>
     <Suspense fallback={<RouteLoading />}>
@@ -123,6 +144,9 @@ const PrivateApp: React.FC = () => (
   </MainLayout>
 );
 
+/**
+ * 根路由配置
+ */
 const AppRoutes: React.FC = () => (
   <Router>
     <Routes>
@@ -146,6 +170,10 @@ const AppRoutes: React.FC = () => (
   </Router>
 );
 
+/**
+ * 应用入口组件
+ * 提供 Ant Design 配置、身份验证上下文和路由系统
+ */
 const App: React.FC = () => {
   return (
     <ConfigProvider locale={zhCN}>

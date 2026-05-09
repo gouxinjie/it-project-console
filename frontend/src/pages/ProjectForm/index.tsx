@@ -42,20 +42,26 @@ import type { ProjectPayload } from "@/types/project";
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 
+// 表单提交的数据类型定义
 interface ProjectFormValues
   extends Omit<ProjectPayload, "project_leader_ids"> {
   project_leader_ids?: number[];
 }
 
+/**
+ * 项目表单页面组件
+ * 用于创建新项目或编辑现有项目的基础信息
+ */
 const ProjectForm: React.FC = () => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>(); // URL 中是否有 ID 决定了是“创建”还是“编辑”模式
   const [form] = Form.useForm<ProjectFormValues>();
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(false); // 数据加载状态
+  const [submitting, setSubmitting] = useState(false); // 表单提交状态
+  const [members, setMembers] = useState<Member[]>([]); // 可选的项目负责人列表
   const isEdit = Boolean(id);
 
+  // 初始化：获取成员列表；若是编辑模式，还需拉取项目详情
   useEffect(() => {
     void fetchMembers();
     if (isEdit) {
@@ -63,6 +69,9 @@ const ProjectForm: React.FC = () => {
     }
   }, [id, isEdit]);
 
+  /**
+   * 获取所有成员，供 Select 选择器使用
+   */
   const fetchMembers = async () => {
     try {
       const items = await getAllMembers();
@@ -73,6 +82,9 @@ const ProjectForm: React.FC = () => {
     }
   };
 
+  /**
+   * 编辑模式下，获取待修改的项目原始数据并填充表单
+   */
   const fetchProjectData = async () => {
     if (!id) {
       return;
@@ -93,24 +105,28 @@ const ProjectForm: React.FC = () => {
     }
   };
 
+  /**
+   * 提交表单
+   * 逻辑：根据 isEdit 调用创建或更新 API
+   */
   const handleSubmit = async (values: ProjectFormValues) => {
     setSubmitting(true);
     try {
       const payload: ProjectPayload = {
         ...values,
-        project_leader_ids: values.project_leader_ids ?? [],
+        project_leader_ids: values.project_leader_ids || [],
       };
 
-      if (isEdit && id) {
+      if (isEdit) {
         await updateProject(Number(id), payload);
-        message.success("项目已更新");
+        message.success("项目更新成功");
       } else {
         await createProject(payload);
-        message.success("项目已创建");
+        message.success("项目创建成功");
       }
-      navigate("/projects");
+      navigate("/projects"); // 成功后返回列表页
     } catch (error) {
-      message.error(isEdit ? "更新项目失败" : "创建项目失败");
+      message.error(isEdit ? "项目更新失败" : "项目创建失败");
     } finally {
       setSubmitting(false);
     }

@@ -101,15 +101,21 @@ const formatMemberNames = (
   return members.map((member) => member.member_name).join("、");
 };
 
+// 项目状态对应的颜色配置
 const PROJECT_STATUS_DISPLAY_CONFIG: Record<string, string> = {
-  [PROJECT_STATUS_OPTIONS[0]]: "#8b5cf6",
-  [PROJECT_STATUS_OPTIONS[1]]: "#f59e0b",
-  [PROJECT_STATUS_OPTIONS[2]]: "#10b981",
-  [PROJECT_STATUS_OPTIONS[3]]: "#64748b",
+  [PROJECT_STATUS_OPTIONS[0]]: "#8b5cf6", // 启动
+  [PROJECT_STATUS_OPTIONS[1]]: "#f59e0b", // 进行中
+  [PROJECT_STATUS_OPTIONS[2]]: "#10b981", // 已交付
+  [PROJECT_STATUS_OPTIONS[3]]: "#64748b", // 已挂起
 };
 
+/**
+ * 项目列表页面组件
+ * 功能：展示所有项目、筛选过滤、展开查看资源详情、管理项目（增删改）
+ */
 const ProjectList: React.FC = () => {
   const navigate = useNavigate();
+  // 控制表格展开行的状态
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState<ProjectTableRecord[]>([]);
@@ -121,11 +127,15 @@ const ProjectList: React.FC = () => {
     total: 0,
   });
 
+  // 页面初始化时获取项目列表和成员列表
   useEffect(() => {
     void fetchProjects(defaultFilters, { current: 1, pageSize: 10, total: 0 });
     void fetchMembers();
   }, []);
 
+  /**
+   * 获取所有项目成员，用于筛选下拉框
+   */
   const fetchMembers = async () => {
     try {
       const items = await getAllMembers();
@@ -136,6 +146,11 @@ const ProjectList: React.FC = () => {
     }
   };
 
+  /**
+   * 获取项目列表数据
+   * @param nextFilters 当前筛选条件
+   * @param nextPagination 分页参数
+   */
   const fetchProjects = async (
     nextFilters: ProjectFilters = filters,
     nextPagination: TablePaginationState = pagination,
@@ -147,6 +162,7 @@ const ProjectList: React.FC = () => {
         limit: nextPagination.pageSize,
       };
 
+      // 构建查询参数
       if (nextFilters.project_type) {
         params.project_type = nextFilters.project_type;
       }
@@ -182,7 +198,7 @@ const ProjectList: React.FC = () => {
         })),
       );
       setFilters(nextFilters);
-      setExpandedRowKeys([]);
+      setExpandedRowKeys([]); // 搜索后重置展开状态
       setPagination({
         current: nextPagination.current,
         pageSize: nextPagination.pageSize,

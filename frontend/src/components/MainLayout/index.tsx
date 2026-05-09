@@ -39,6 +39,7 @@ import styles from "./index.module.scss";
 
 const { Header, Sider, Content } = Layout;
 
+// 密码强度校验正则：必须包含字母和数字
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/;
 
 interface PasswordFormValues {
@@ -47,10 +48,14 @@ interface PasswordFormValues {
   confirm_password: string;
 }
 
+/**
+ * 全局布局组件
+ * 包含侧边栏导航、顶部页眉（用户信息、修改密码、退出登录）以及主体内容区域
+ */
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [collapsed, setCollapsed] = useState(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
+  const [collapsed, setCollapsed] = useState(false); // 侧边栏折叠状态
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false); // 修改密码弹窗状态
+  const [isSubmittingPassword, setIsSubmittingPassword] = useState(false); // 修改密码提交状态
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, logout } = useAuth();
@@ -59,6 +64,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     token: { colorBgContainer },
   } = theme.useToken();
 
+  // 预取数据：在布局挂载时预加载常用的成员和项目数据，提升后续页面加载速度
   useEffect(() => {
     prefetchMembers({ skip: 0, limit: 200 });
     prefetchProjects({ skip: 0, limit: 10 });
@@ -68,6 +74,10 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return () => window.clearTimeout(timer);
   }, []);
 
+  /**
+   * 动态生成左侧菜单项
+   * 根据当前用户权限（是否为管理员）展示不同的菜单
+   */
   const menuItems = useMemo(() => {
     const baseItems = [
       {
@@ -87,6 +97,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       },
     ];
 
+    // 管理员额外可见“账号管理”
     if (currentUser?.is_superuser) {
       baseItems.push({
         key: "/users",

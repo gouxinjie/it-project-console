@@ -232,23 +232,29 @@
             }
         }
 
-        .ant-btn-primary {
-            height: 40px;
-            border-radius: 6px;
-            background: var(--slate-900);
-            font-weight: 600;
-            font-size: 14px;
-            border: none;
-            margin-top: 2px;
-
-            &:hover {
-                background: var(--slate-800);
-            }
-        }
-
         .ant-checkbox-wrapper {
             font-size: 12px;
         }
+    }
+}
+
+.submitButton {
+    height: 40px !important;
+    border-radius: 6px !important;
+    background: var(--slate-900) !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    border: none !important;
+    margin-top: 2px !important;
+    box-shadow: none !important;
+    color: #ffffff !important;
+
+    &:hover,
+    &:focus,
+    &:active {
+        background: var(--slate-800) !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 }
 
